@@ -2,13 +2,14 @@ name: Update Compiled Translations
 on:
   push:
     paths:
-      - 'i18n/*.ts'
+      - "i18n/*.ts"
     branches:
       - main
   workflow_dispatch:
 
 env:
-  QT_VERSION: '6.10.1'
+  QT_VERSION: "6.10.1"
+  COMPILED_TRANSLATIONS_DIR: "i18n_compiled"
 
 jobs:
   update-translations:
@@ -30,7 +31,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: "3.x"
 
       - name: Clean up obsolete translations
         run: |
@@ -72,35 +73,26 @@ jobs:
           # Move the generated JSON to the temp directory
           mv i18n/compiled/translation_progress.json /tmp/qm_files/ 2>/dev/null || true
 
-      - name: Push compiled files to translations repository
-        env:
-          TRANSLATIONS_TOKEN: ${{ secrets.TRANSLATIONS_TOKEN }}
+      - name: Commit compiled files to repository
         run: |
-          # Clone the translations repository
-          git clone https://x-access-token:${TRANSLATIONS_TOKEN}@github.com/Odizinne/QontrolPanelTranslations.git /tmp/translations
+          OUTPUT_DIR="$GITHUB_WORKSPACE/${{ env.COMPILED_TRANSLATIONS_DIR }}"
+          mkdir -p "$OUTPUT_DIR"
 
-          # Copy all compiled QM files and progress JSON
-          cp /tmp/qm_files/*.qm /tmp/translations/
-          cp /tmp/qm_files/translation_progress.json /tmp/translations/
+          # Replace previously generated artifacts so removed translations do not leave stale files behind.
+          find "$OUTPUT_DIR" -maxdepth 1 -type f \( -name '*.qm' -o -name 'translation_progress.json' \) -delete
+          cp /tmp/qm_files/*.qm "$OUTPUT_DIR/"
+          if [ -f /tmp/qm_files/translation_progress.json ]; then
+            cp /tmp/qm_files/translation_progress.json "$OUTPUT_DIR/"
+          fi
 
-          # Commit and push to translations repo
-          cd /tmp/translations
+          cd "$GITHUB_WORKSPACE"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add *.qm translation_progress.json
+
+          git add i18n/*.ts "${{ env.COMPILED_TRANSLATIONS_DIR }}"
           if ! git diff --staged --quiet; then
-            git commit -m "Auto-update compiled translations and progress data"
+            git commit -m "Update compiled translations [skip ci]"
             git push
           else
             echo "No changes to commit"
-          fi
-
-          # Commit cleaned source .ts files back to main repo
-          cd $GITHUB_WORKSPACE
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add i18n/*.ts
-          if ! git diff --staged --quiet; then
-            git commit -m "Clean obsolete translations [skip ci]"
-            git push
           fi
