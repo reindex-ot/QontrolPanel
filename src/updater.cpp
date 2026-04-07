@@ -310,7 +310,7 @@ void Updater::downloadLatestTranslations()
     m_failedTranslationDownloads = 0;
 
     QStringList languageCodes = getLanguageCodes();
-    QString baseUrl = "https://github.com/Odizinne/QontrolPanelTranslations/raw/refs/heads/main/QontrolPanel_%1.qm";
+    QString baseUrl = "https://github.com/ChrisLauinger77/QontrolPanel/tree/main/i18n_compiled/QontrolPanel_%1.qm";
 
     m_totalTranslationDownloads = languageCodes.size();
     emit translationDownloadStarted();
@@ -475,7 +475,7 @@ void Updater::loadTranslationProgressData()
 
 void Updater::downloadTranslationProgressFile()
 {
-    QString githubUrl = "https://raw.githubusercontent.com/Odizinne/QontrolPanelTranslations/main/translation_progress.json";
+    QString githubUrl = "https://raw.githubusercontent.com/ChrisLauinger77/QontrolPanel/main/i18n_compiled/translation_progress.json";
     LOG_INFO("Updater",
              QString("Downloading translation progress file from: %1").arg(githubUrl));
 
