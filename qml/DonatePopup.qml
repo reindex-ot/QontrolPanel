@@ -24,7 +24,7 @@ Dialog {
             highlighted: true
             DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             onClicked: {
-                Qt.openUrlExternally("https://ko-fi.com/ChrisLauinger77")
+                Qt.openUrlExternally("https://github.com/sponsors/ChrisLauinger77")
                 donatePopup.close()
             }
         }
