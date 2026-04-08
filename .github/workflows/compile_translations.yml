@@ -7,6 +7,10 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 env:
   QT_VERSION: "6.10.1"
   COMPILED_TRANSLATIONS_DIR: "i18n_compiled"
@@ -73,7 +77,7 @@ jobs:
           # Move the generated JSON to the temp directory
           mv i18n/compiled/translation_progress.json /tmp/qm_files/ 2>/dev/null || true
 
-      - name: Commit compiled files to repository
+      - name: Prepare compiled files
         run: |
           OUTPUT_DIR="$GITHUB_WORKSPACE/${{ env.COMPILED_TRANSLATIONS_DIR }}"
           mkdir -p "$OUTPUT_DIR"
@@ -85,14 +89,24 @@ jobs:
             cp /tmp/qm_files/translation_progress.json "$OUTPUT_DIR/"
           fi
 
-          cd "$GITHUB_WORKSPACE"
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+      - name: Create pull request for compiled translations
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Update compiled translations [skip ci]"
+          committer: GitHub Action <action@github.com>
+          author: GitHub Action <action@github.com>
+          branch: automation/update-compiled-translations
+          base: main
+          delete-branch: true
+          title: "Update compiled translations"
+          body: |
+            Automated update for compiled translation artifacts.
 
-          git add i18n/*.ts "${{ env.COMPILED_TRANSLATIONS_DIR }}"
-          if ! git diff --staged --quiet; then
-            git commit -m "Update compiled translations [skip ci]"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+            This PR was created by the translation compilation workflow and includes:
+            - refreshed compiled `.qm` files in `${{ env.COMPILED_TRANSLATIONS_DIR }}`
+            - refreshed `translation_progress.json`
+            - cleaned obsolete entries from changed translation source files
+          add-paths: |
+            i18n
+            i18n_compiled
