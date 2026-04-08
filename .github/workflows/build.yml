@@ -1,9 +1,15 @@
 name: Build
 on:
   push:
+    paths-ignore:
+      - "i18n/**"
+      - "i18n_compiled/**"
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - "i18n/**"
+      - "i18n_compiled/**"
   workflow_dispatch:
 env:
   QT_VERSION: "6.10.1"
