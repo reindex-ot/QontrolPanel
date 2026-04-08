@@ -597,7 +597,7 @@ Wenn Sie meine Arbeit unterstützen möchten, freue ich mich über jeden Beitrag
     </message>
     <message>
         <source>Slider wheel sensivity</source>
-        <translation type="unfinished"></translation>
+        <translation>Empfindlichkeit des Schiebereglers</translation>
     </message>
     <message>
         <source>Normal</source>
