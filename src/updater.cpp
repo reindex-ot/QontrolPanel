@@ -310,7 +310,7 @@ void Updater::downloadLatestTranslations()
     m_failedTranslationDownloads = 0;
 
     QStringList languageCodes = getLanguageCodes();
-    QString baseUrl = "https://github.com/ChrisLauinger77/QontrolPanel/tree/main/i18n_compiled/QontrolPanel_%1.qm";
+    QString baseUrl = "https://raw.githubusercontent.com/ChrisLauinger77/QontrolPanel/main/i18n_compiled/QontrolPanel_%1.qm";
 
     m_totalTranslationDownloads = languageCodes.size();
     emit translationDownloadStarted();
@@ -381,22 +381,27 @@ void Updater::onTranslationFileDownloaded()
         QString downloadPath = getTranslationDownloadPath();
         QString fileName = QString("QontrolPanel_%1.qm").arg(languageCode);
         QString filePath = downloadPath + "/" + fileName;
+        QByteArray data = reply->readAll();
+        const QString contentType = reply->header(QNetworkRequest::ContentTypeHeader).toString();
 
         QDir().mkpath(downloadPath);
 
-        QFile file(filePath);
-        if (file.open(QIODevice::WriteOnly)) {
-            QByteArray data = reply->readAll();
-            if (!data.isEmpty()) {
+        if (data.isEmpty()) {
+            qWarning() << "Downloaded empty file for:" << languageCode;
+            m_failedTranslationDownloads++;
+        } else if (contentType.startsWith("text/html", Qt::CaseInsensitive)) {
+            qWarning() << "Received HTML instead of translation file for:" << languageCode
+                       << "Content-Type:" << contentType;
+            m_failedTranslationDownloads++;
+        } else {
+            QFile file(filePath);
+            if (file.open(QIODevice::WriteOnly)) {
                 file.write(data);
                 file.close();
             } else {
-                qWarning() << "Downloaded empty file for:" << languageCode;
+                qWarning() << "Failed to save translation file:" << filePath;
                 m_failedTranslationDownloads++;
             }
-        } else {
-            qWarning() << "Failed to save translation file:" << filePath;
-            m_failedTranslationDownloads++;
         }
     } else {
         qWarning() << "Failed to download translation for" << languageCode
