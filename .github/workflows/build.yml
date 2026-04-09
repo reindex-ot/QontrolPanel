@@ -19,7 +19,7 @@ jobs:
     runs-on: windows-2022
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6
         with:
           submodules: recursive
       - name: Update HeadsetControl submodule to latest master
@@ -56,7 +56,7 @@ jobs:
           C:/vcpkg/vcpkg install hidapi:x64-windows getopt-win32:x64-windows
       - name: Install Qt
         id: qt
-        uses: jurplel/install-qt-action@v4.3.0
+        uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
           arch: "win64_msvc2022_64"
@@ -88,7 +88,7 @@ jobs:
           $folder = "build/QontrolPanel"
           Compress-Archive -Path $folder -DestinationPath $zipFile
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7
         with:
           name: QontrolPanel_win64_msvc2022
           path: build/QontrolPanel_win64_msvc2022.zip
@@ -112,7 +112,7 @@ jobs:
           $env:Path += ";${env:ProgramFiles(x86)}\Inno Setup 6"
           iscc.exe tools/installer.iss
       - name: Upload Installer
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7
         with:
           name: QontrolPanel_Installer
           path: tools/Output/QontrolPanel_Installer.exe
