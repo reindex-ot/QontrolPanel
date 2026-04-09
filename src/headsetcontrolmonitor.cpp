@@ -288,8 +288,8 @@ void HeadsetControlMonitor::updateCapabilities()
         newLightsCapability = headset.supports(CAP_LIGHTS);
 
         LOG_INFO("HeadsetControlManager",
-                                        QString("Device capabilities - Sidetone: %1, Lights: %2")
-                                            .arg(newSidetoneCapability ? "YES" : "NO", newLightsCapability ? "YES" : "NO"));
+                                        QString("Device capabilities: %1")
+                                            .arg(getCapabilityList(headset).join(", ")));
     }
 
     if (newSidetoneCapability != m_hasSidetoneCapability ||
