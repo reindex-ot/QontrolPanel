@@ -9,7 +9,8 @@ on:
       - "i18n/**"
       - "i18n_compiled/**"
       - "dependencies/headsetcontrol/**"
-      - "workflows/compile_translations.yml"
+      - "workflows/*.yml"
+
   pull_request:
     branches:
       - main
