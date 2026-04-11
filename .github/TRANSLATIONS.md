@@ -2,7 +2,7 @@
 
 ### Install Qt linguist
 
-Please follow qt installation in [build guide](BUILDING.md) to install Qt linguist.
+Please follow qt installation in [build guide](BUILDING.md) to install [Qt linguist](https://doc.qt.io/qt-6/linguist-translators.html).
 
 ### Testing your changes
 
