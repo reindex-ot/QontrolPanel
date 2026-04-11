@@ -4,12 +4,16 @@ on:
     branches:
       - main
     paths-ignore:
+      - "*.md"
+      - "**/*.md"
       - "i18n/**"
       - "i18n_compiled/**"
   pull_request:
     branches:
       - main
     paths-ignore:
+      - "*.md"
+      - "**/*.md"
       - "i18n/**"
       - "i18n_compiled/**"
   workflow_dispatch:
