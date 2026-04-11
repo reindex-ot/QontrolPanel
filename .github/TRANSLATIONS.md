@@ -4,6 +4,10 @@
 
 Please follow qt installation in [build guide](BUILDING.md) to install [Qt linguist](https://doc.qt.io/qt-6/linguist-translators.html).
 
+### New languages
+
+For new languages we also need to add a new line in [cmake/languages.cmake](../cmake/languages.cmake).
+
 ### Testing your changes
 
 You can override the qm files in your QSS install (default: `%localappdata%\programs\QontrolPanel\bin\i18n`) with `file` -> `release as...`
