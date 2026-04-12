@@ -83,8 +83,10 @@ ColumnLayout {
                     Layout.fillWidth: true
                     title: qsTr("Device battery")
                     visible: HeadsetControlBridge.batteryStatus !== "BATTERY_UNAVAILABLE" && HeadsetControlBridge.anyDeviceFound
+                    description: qsTr("Current battery level of the connected headset") +
+                                 (HeadsetControlBridge.batteryStatus === "BATTERY_CHARGING" ? "\n" + "⚡︎" + qsTr("(Charging)") : "")
                     additionalControl: Label {
-                        text: HeadsetControlBridge.batteryStatus === "BATTERY_CHARGING" ? qsTr("Charging") : HeadsetControlBridge.batteryLevel + "%"
+                        text: "🔋" + HeadsetControlBridge.batteryLevel + "%"
                     }
                 }
 
@@ -128,6 +130,22 @@ ColumnLayout {
 
                 Card {
                     visible: HeadsetControlBridge.anyDeviceFound
+                    enabled: HeadsetControlBridge.hasRotateToMuteCapability
+                    Layout.fillWidth: true
+                    title: qsTr("Headset Rotate-to-Mute")
+                    description: qsTr("Toggle rotate-to-mute feature on your headset")
+
+                    additionalControl: LabeledSwitch {
+                        checked: UserSettings.headsetcontrolRotateToMute
+                        onClicked:{
+                            UserSettings.headsetcontrolRotateToMute = checked
+                            HeadsetControlBridge.setRotateToMute(checked)
+                        }
+                    }
+                }
+
+                Card {
+                    visible: HeadsetControlBridge.anyDeviceFound
                     enabled: HeadsetControlBridge.hasSidetoneCapability
                     Layout.fillWidth: true
                     title: qsTr("Microphone Sidetone")
@@ -148,6 +166,7 @@ ColumnLayout {
                         }
                     }
                 }
+
                 Card {
                     visible: HeadsetControlBridge.anyDeviceFound
                     Layout.fillWidth: true

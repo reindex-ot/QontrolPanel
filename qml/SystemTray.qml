@@ -77,6 +77,9 @@ Platform.SystemTrayIcon {
 
         batteryText += "🔋";
             batteryText += HeadsetControlBridge.batteryLevel + "%";
+        if (HeadsetControlBridge.hasChatMixCapability) {
+            batteryText += " " + "🎤" + qsTr("ChatMix") + ": " + HeadsetControlBridge.chatMix;
+        }
 
         return baseTooltip + batteryText;
     }
