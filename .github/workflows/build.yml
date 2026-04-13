@@ -10,6 +10,7 @@ on:
       - "i18n_compiled/**"
       - "dependencies/headsetcontrol/**"
       - ".github/workflows/*.yml"
+      - ".assets/**"
 
   pull_request:
     branches:
@@ -19,6 +20,8 @@ on:
       - "**/*.md"
       - "i18n/**"
       - "i18n_compiled/**"
+      - ".assets/**"
+
   workflow_dispatch:
 permissions:
   contents: write

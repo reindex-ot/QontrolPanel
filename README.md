@@ -9,6 +9,11 @@ It provide output and input volume / device / mute control as well as applicatio
 
 ![image](.assets/screenshot.png)
 
+## HeadsetControl integration
+
+![image](.assets/screenshot_hsc.png)
+For a list of supported headsets visit [here](https://github.com/Sapd/HeadsetControl).
+
 If you like my work, please consider supporting me !
 
 ## Usage
@@ -41,4 +46,4 @@ See [here](.github/BUILDING.md).
 - Used OCEAN sound effects from KDE
 - Used icons from FlatIcon and VeryIcon
 - Application icon from [Yogi Aprelliyanto](https://www.flaticon.com/authors/yogi-aprelliyanto)
-- [Sapd](https://github.com/sapd/) for HeadsetControl
+- [Sapd](https://github.com/sapd/) for [HeadsetControl](https://github.com/Sapd/HeadsetControl)
