@@ -34,9 +34,23 @@ ColumnLayout {
             Card {
                 Layout.fillWidth: true
                 title: qsTr("Show power action confirmation")
+                description: qsTr("Show a confirmation dialog when selecting a power action from the system tray menu")
                 additionalControl: LabeledSwitch {
                     checked: UserSettings.showPowerDialogConfirmation
                     onClicked: UserSettings.showPowerDialogConfirmation = checked
+                }
+            }
+
+            Card {
+                enabled: UserSettings.showPowerDialogConfirmation
+                Layout.fillWidth: true
+                title: qsTr("Power action confirmation timeout (seconds)")
+                description: qsTr("Time before the power action confirmation dialog automatically triggers the selected action")
+                additionalControl: SpinBox {
+                    from: 1
+                    to: 120
+                    value: UserSettings.powerDialogTimeout
+                    onValueChanged: UserSettings.powerDialogTimeout = value
                 }
             }
 
