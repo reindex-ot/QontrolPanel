@@ -11,6 +11,8 @@ HeadsetControlMonitor::HeadsetControlMonitor(QObject *parent)
     , m_hasLightsCapability(false)
     , m_hasRotateToMuteCapability(false)
     , m_hasChatMixCapability(false)
+    , m_hasVoicePromptsCapability(false)
+    , m_hasInactiveTimeCapability(false)
     , m_deviceName("")
     , m_batteryStatus("BATTERY_UNAVAILABLE")
     , m_batteryLevel(-1)
@@ -74,6 +76,8 @@ void HeadsetControlMonitor::stopMonitoring()
     m_hasLightsCapability = false;
     m_hasRotateToMuteCapability = false;
     m_hasChatMixCapability = false;
+    m_hasVoicePromptsCapability = false;
+    m_hasInactiveTimeCapability = false;
     m_deviceName = "";
     m_batteryStatus = "BATTERY_UNAVAILABLE";
     m_batteryLevel = -1;
@@ -160,6 +164,35 @@ void HeadsetControlMonitor::setRotateToMute(bool enabled)
     }
 }
 
+void HeadsetControlMonitor::setVoicePrompts(bool enabled)
+{
+    if (!m_hasVoicePromptsCapability) {
+        LOG_WARN("HeadsetControlManager",
+                                         "Cannot set voice prompts - device does not support voice prompts capability");
+        return;
+    }
+
+    if (m_headsets.empty()) {
+        LOG_WARN("HeadsetControlManager",
+                                         "Cannot set voice prompts - no device connected");
+        return;
+    }
+
+    LOG_INFO("HeadsetControlManager",
+                                    QString("Setting voice prompts: %1").arg(enabled ? "ON" : "OFF"));
+
+    headsetcontrol::Headset& headset = m_headsets[0];
+    headsetcontrol::Result<headsetcontrol::VoicePromptsResult> result = headset.setVoicePrompts(enabled);
+
+    if (!result) {
+        LOG_CRITICAL("HeadsetControlManager",
+                                             QString("Failed to set voice prompts: %1").arg(QString::fromStdString(result.error().fullMessage())));
+    } else {
+        LOG_INFO("HeadsetControlManager",
+                                        "Voice prompts set successfully");
+    }
+}
+
 void HeadsetControlMonitor::setSidetone(int value)
 {
     if (!m_hasSidetoneCapability) {
@@ -191,6 +224,37 @@ void HeadsetControlMonitor::setSidetone(int value)
     }
 }
 
+void HeadsetControlMonitor::setInactiveTime(int value)
+{
+    if (!m_hasInactiveTimeCapability) {
+        LOG_WARN("HeadsetControlManager",
+                                         "Cannot set inactive time - device does not support inactive time capability");
+        return;
+    }
+
+    if (m_headsets.empty()) {
+        LOG_WARN("HeadsetControlManager",
+                                         "Cannot set inactive time - no device connected");
+        return;
+    }
+
+    value = qBound(0, value, 128);
+
+    LOG_INFO("HeadsetControlManager",
+                                    QString("Setting headset inactive time to %1 minutes").arg(value));
+
+    headsetcontrol::Headset& headset = m_headsets[0];
+    headsetcontrol::Result<headsetcontrol::InactiveTimeResult> result = headset.setInactiveTime(static_cast<uint8_t>(value));
+
+    if (!result) {
+        LOG_CRITICAL("HeadsetControlManager",
+                                             QString("Failed to set inactive time: %1").arg(QString::fromStdString(result.error().fullMessage())));
+    } else {
+        LOG_INFO("HeadsetControlManager",
+                                        QString("Inactive time set to %1 minutes successfully").arg(value));
+    }
+}
+
 void HeadsetControlMonitor::fetchHeadsetInfo()
 {
     if (!m_isMonitoring || m_isFetching) {
@@ -214,6 +278,8 @@ void HeadsetControlMonitor::fetchHeadsetInfo()
             m_hasLightsCapability = false;
             m_hasRotateToMuteCapability = false;
             m_hasChatMixCapability = false;
+            m_hasVoicePromptsCapability = false;
+            m_hasInactiveTimeCapability = false;
             m_deviceName = "";
             m_batteryStatus = "BATTERY_UNAVAILABLE";
             m_batteryLevel = -1;
@@ -340,6 +406,8 @@ void HeadsetControlMonitor::updateCapabilities()
     bool newLightsCapability = false;
     bool newRotateToMuteCapability = false;
     bool newChatMixCapability = false;
+    bool newVoicePromptsCapability = false;
+    bool newInactivetimeCapability = false;
     QString newDeviceName = "";
     bool newAnyDeviceFound = !m_cachedDevices.isEmpty();
     bool wasDeviceFound = m_anyDeviceFound;
@@ -352,6 +420,8 @@ void HeadsetControlMonitor::updateCapabilities()
         newLightsCapability = headset.supports(CAP_LIGHTS);
         newRotateToMuteCapability = headset.supports(CAP_ROTATE_TO_MUTE);
         newChatMixCapability = headset.supports(CAP_CHATMIX_STATUS);
+        newVoicePromptsCapability = headset.supports(CAP_VOICE_PROMPTS);
+        newInactivetimeCapability = headset.supports(CAP_INACTIVE_TIME);
 
         LOG_INFO("HeadsetControlManager",
                                         QString("Device capabilities: %1")
@@ -361,11 +431,15 @@ void HeadsetControlMonitor::updateCapabilities()
     if (newSidetoneCapability != m_hasSidetoneCapability ||
         newLightsCapability != m_hasLightsCapability ||
         newRotateToMuteCapability != m_hasRotateToMuteCapability ||
-        newChatMixCapability != m_hasChatMixCapability) {
+        newChatMixCapability != m_hasChatMixCapability ||
+        newVoicePromptsCapability != m_hasVoicePromptsCapability ||
+        newInactivetimeCapability != m_hasInactiveTimeCapability) {
         m_hasSidetoneCapability = newSidetoneCapability;
         m_hasLightsCapability = newLightsCapability;
         m_hasRotateToMuteCapability = newRotateToMuteCapability;
         m_hasChatMixCapability = newChatMixCapability;
+        m_hasVoicePromptsCapability = newVoicePromptsCapability;
+        m_hasInactiveTimeCapability = newInactivetimeCapability;
         emit capabilitiesChanged();
     }
 
@@ -394,11 +468,25 @@ void HeadsetControlMonitor::updateCapabilities()
                                                 QString("Applying saved rotate-to-mute setting: %1").arg(rotateToMuteEnabled ? "ON" : "OFF"));
                 setRotateToMute(rotateToMuteEnabled);
             }
+            if (newVoicePromptsCapability) {
+                bool voicePromptsEnabled = UserSettings::instance()->headsetcontrolVoicePrompts();
+                LOG_INFO("HeadsetControlManager",
+                                                QString("Applying saved voice prompts setting: %1").arg(voicePromptsEnabled ? "ON" : "OFF"));
+                setVoicePrompts(voicePromptsEnabled);
+            }
             if (newSidetoneCapability) {
                 int sidetoneValue = UserSettings::instance()->headsetcontrolSidetone();
                 LOG_INFO("HeadsetControlManager",
                                                 QString("Applying saved sidetone setting: %1").arg(sidetoneValue));
                 setSidetone(sidetoneValue);
+            }
+            if (newInactivetimeCapability) {
+                int inactiveTimeValue = UserSettings::instance()->headsetcontrolInactiveTime();
+                if (inactiveTimeValue >= 0) {
+                    LOG_INFO("HeadsetControlManager",
+                                                    QString("Applying saved inactive time setting: %1").arg(inactiveTimeValue));
+                    setInactiveTime(inactiveTimeValue);
+                }
             }
         }
     }

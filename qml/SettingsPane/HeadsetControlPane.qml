@@ -91,12 +91,15 @@ ColumnLayout {
                 }
 
                 Card {
+                    visible: HeadsetControlBridge.anyDeviceFound
                     Layout.fillWidth: true
-                    title: qsTr("ChatMix")
-                    visible: HeadsetControlBridge.anyDeviceFound && HeadsetControlBridge.hasChatMixCapability
-                    description: qsTr("ChatMix value of the connected headset")
-                    additionalControl: Label {
-                        text:  HeadsetControlBridge.chatMix
+                    title: qsTr("Notification on low battery")
+                    additionalControl: Switch {
+                        checked: UserSettings.enableNotifications
+                        onClicked: {
+                            UserSettings.enableNotifications = checked
+                            HeadsetControlBridge.notificationsEnabled = checked
+                        }
                     }
                 }
 
@@ -113,10 +116,54 @@ ColumnLayout {
                 }
 
                 Card {
+                    Layout.fillWidth: true
+                    title: qsTr("ChatMix")
+                    visible: HeadsetControlBridge.anyDeviceFound && HeadsetControlBridge.hasChatMixCapability
+                    description: qsTr("ChatMix value of the connected headset")
+                    additionalControl: Label {
+                        text:  HeadsetControlBridge.chatMix
+                    }
+                }
+
+                Card {
+                    visible: HeadsetControlBridge.anyDeviceFound
+                    enabled: HeadsetControlBridge.hasInactiveTimeCapability
+                    Layout.fillWidth: true
+                    title: qsTr("Inactive time (minutes)")
+                    description: qsTr("Set the time of inactivity after which your headset will enter power-saving mode")
+                    additionalControl: RowLayout {
+                        spacing: 12
+
+                        NFSlider {
+                            id: inactiveTimeSlider
+                            from: 0
+                            to: 90
+                            value: Math.max(0, UserSettings.headsetcontrolInactiveTime)
+                            Layout.preferredWidth: 180
+                            onPressedChanged: {
+                                if (!pressed) {
+                                    UserSettings.headsetcontrolInactiveTime = Math.round(value)
+                                    HeadsetControlBridge.setInactiveTime(Math.round(value))
+                                }
+                            }
+                            onWheelChanged: {
+                                UserSettings.headsetcontrolInactiveTime = Math.round(value)
+                                HeadsetControlBridge.setInactiveTime(Math.round(value))
+                            }
+                        }
+
+                        Label {
+                            text: Math.round(inactiveTimeSlider.value).toString()
+                            opacity: 0.7
+                        }
+                    }
+                }
+
+                Card {
                     visible: HeadsetControlBridge.anyDeviceFound
                     enabled: HeadsetControlBridge.hasLightsCapability
                     Layout.fillWidth: true
-                    title: qsTr("Headset Lighting")
+                    title: qsTr("Lights")
                     description: qsTr("Toggle RGB lights on your headset")
 
                     additionalControl: LabeledSwitch {
@@ -132,7 +179,7 @@ ColumnLayout {
                     visible: HeadsetControlBridge.anyDeviceFound
                     enabled: HeadsetControlBridge.hasRotateToMuteCapability
                     Layout.fillWidth: true
-                    title: qsTr("Headset Rotate-to-Mute")
+                    title: qsTr("Rotate-to-Mute")
                     description: qsTr("Toggle rotate-to-mute feature on your headset")
 
                     additionalControl: LabeledSwitch {
@@ -148,7 +195,7 @@ ColumnLayout {
                     visible: HeadsetControlBridge.anyDeviceFound
                     enabled: HeadsetControlBridge.hasSidetoneCapability
                     Layout.fillWidth: true
-                    title: qsTr("Microphone Sidetone")
+                    title: qsTr("Sidetone")
                     description: qsTr("Adjust your voice feedback level")
                     additionalControl: RowLayout {
                         spacing: 12
@@ -180,13 +227,16 @@ ColumnLayout {
 
                 Card {
                     visible: HeadsetControlBridge.anyDeviceFound
+                    enabled: HeadsetControlBridge.hasVoicePromptsCapability
                     Layout.fillWidth: true
-                    title: qsTr("Notification on low battery")
-                    additionalControl: Switch {
-                        checked: UserSettings.enableNotifications
-                        onClicked: {
-                            UserSettings.enableNotifications = checked
-                            HeadsetControlBridge.notificationsEnabled = checked
+                    title: qsTr("Voice Prompts")
+                    description: qsTr("Toggle voice prompts on your headset")
+
+                    additionalControl: LabeledSwitch {
+                        checked: UserSettings.headsetcontrolVoicePrompts
+                        onClicked:{
+                            UserSettings.headsetcontrolVoicePrompts = checked
+                            HeadsetControlBridge.setVoicePrompts(checked)
                         }
                     }
                 }
@@ -213,7 +263,7 @@ ColumnLayout {
         Label {
             anchors.centerIn: parent
             opacity: 0.5
-            text: qsTr("HeadsetControl monitoring is disabled\nYou can enable it in the General tab.")
+            text: qsTr("HeadsetControl monitoring is disabled\nYou can enable it in the Components tab.")
             visible: !UserSettings.headsetcontrolMonitoring
             horizontalAlignment: Text.AlignHCenter
         }

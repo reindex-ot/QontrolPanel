@@ -126,11 +126,29 @@ void HeadsetControlBridge::setRotateToMute(bool enabled)
     }
 }
 
+void HeadsetControlBridge::setVoicePrompts(bool enabled)
+{
+    HeadsetControlMonitor* monitor = findMonitor();
+    if (monitor) {
+        QMetaObject::invokeMethod(monitor, "setVoicePrompts", Qt::QueuedConnection,
+                                  Q_ARG(bool, enabled));
+    }
+}
+
 void HeadsetControlBridge::setSidetone(int value)
 {
     HeadsetControlMonitor* monitor = findMonitor();
     if (monitor) {
         QMetaObject::invokeMethod(monitor, "setSidetone", Qt::QueuedConnection,
+                                  Q_ARG(int, value));
+    }
+}
+
+void HeadsetControlBridge::setInactiveTime(int value)
+{
+    HeadsetControlMonitor* monitor = findMonitor();
+    if (monitor) {
+        QMetaObject::invokeMethod(monitor, "setInactiveTime", Qt::QueuedConnection,
                                   Q_ARG(int, value));
     }
 }
@@ -157,6 +175,18 @@ bool HeadsetControlBridge::hasChatMixCapability() const
 {
     HeadsetControlMonitor* monitor = findMonitor();
     return monitor ? monitor->hasChatMixCapability() : false;
+}
+
+bool HeadsetControlBridge::hasVoicePromptsCapability() const
+{
+    HeadsetControlMonitor* monitor = findMonitor();
+    return monitor ? monitor->hasVoicePromptsCapability() : false;
+}
+
+bool HeadsetControlBridge::hasInactiveTimeCapability() const
+{
+    HeadsetControlMonitor* monitor = findMonitor();
+    return monitor ? monitor->hasInactiveTimeCapability() : false;
 }
 
 QString HeadsetControlBridge::deviceName() const

@@ -20,6 +20,8 @@ on:
       - "**/*.md"
       - "i18n/**"
       - "i18n_compiled/**"
+      - "dependencies/headsetcontrol/**"
+      - ".github/workflows/*.yml"
       - ".assets/**"
 
   workflow_dispatch:
@@ -64,8 +66,16 @@ jobs:
       - name: Setup vcpkg
         shell: pwsh
         run: |
-          git clone https://github.com/microsoft/vcpkg.git C:/vcpkg
-          C:/vcpkg/bootstrap-vcpkg.bat
+          $vcpkgRoot = "C:/vcpkg"
+
+          if (-not (Test-Path "$vcpkgRoot/.git")) {
+            if (Test-Path $vcpkgRoot) {
+              Remove-Item -Recurse -Force $vcpkgRoot
+            }
+            git clone https://github.com/microsoft/vcpkg.git $vcpkgRoot
+          }
+
+          cmd /c "$vcpkgRoot\bootstrap-vcpkg.bat"
       - name: Install dependencies with vcpkg
         shell: pwsh
         run: |
