@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - "i18n/*.ts"
+    branches:
+      - main
   workflow_run:
     workflows:
       - Build
