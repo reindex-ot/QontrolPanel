@@ -646,8 +646,60 @@ If you&apos;d like to support my work, any contribution would be greatly appreci
         <translation>Zaženi ob zagonu sistema</translation>
     </message>
     <message>
-        <source>QSS will boot up when your computer starts</source>
-        <translation>QSS se bo zagnal ob zagonu računalnika</translation>
+        <source>Settings startup page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Choose which settings page opens when the settings window is shown</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>General</source>
+        <translation type="unfinished">Splošno</translation>
+    </message>
+    <message>
+        <source>Components</source>
+        <translation type="unfinished">Komponente</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation type="unfinished">Videz</translation>
+    </message>
+    <message>
+        <source>Media Overlay</source>
+        <translation type="unfinished">Prekrivanje medijev</translation>
+    </message>
+    <message>
+        <source>ChatMix</source>
+        <translation type="unfinished">ChatMix</translation>
+    </message>
+    <message>
+        <source>Shortcuts</source>
+        <translation type="unfinished">Bližnjice</translation>
+    </message>
+    <message>
+        <source>App Hotkeys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>HeadsetControl</source>
+        <translation type="unfinished">Nadzor slušalk</translation>
+    </message>
+    <message>
+        <source>Renaming</source>
+        <translation type="unfinished">Preimenovanje</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished">Jezik</translation>
+    </message>
+    <message>
+        <source>Updates</source>
+        <translation type="unfinished">Posodobitve</translation>
+    </message>
+    <message>
+        <source>Debug</source>
+        <translation type="unfinished">Razhroščevanje</translation>
     </message>
     <message>
         <source>Show a confirmation dialog when selecting a power action from the system tray menu</source>
@@ -684,6 +736,10 @@ If you&apos;d like to support my work, any contribution would be greatly appreci
     <message>
         <source>DDC/CI brightness update rate</source>
         <translation>Hitrost posodabljanja svetlosti DDC/CI</translation>
+    </message>
+    <message>
+        <source>QontrolPanel will boot up when your computer starts</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Controls how frequently brightness commands are sent to external monitors</source>
@@ -753,7 +809,7 @@ If you&apos;d like to support my work, any contribution would be greatly appreci
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>(Charging)</source>
+        <source>Notify when the connected headset reaches %1% or lower.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

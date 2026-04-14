@@ -646,8 +646,60 @@ If you&apos;d like to support my work, any contribution would be greatly appreci
         <translation>Добавить в автозагрузку</translation>
     </message>
     <message>
-        <source>QSS will boot up when your computer starts</source>
-        <translation>QSS запустится при включении компьютера</translation>
+        <source>Settings startup page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Choose which settings page opens when the settings window is shown</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>General</source>
+        <translation type="unfinished">Основные</translation>
+    </message>
+    <message>
+        <source>Components</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation type="unfinished">Вид</translation>
+    </message>
+    <message>
+        <source>Media Overlay</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ChatMix</source>
+        <translation type="unfinished">ChatMix</translation>
+    </message>
+    <message>
+        <source>Shortcuts</source>
+        <translation type="unfinished">Сочетания клавиш</translation>
+    </message>
+    <message>
+        <source>App Hotkeys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>HeadsetControl</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Renaming</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished">Язык</translation>
+    </message>
+    <message>
+        <source>Updates</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Debug</source>
+        <translation type="unfinished">Информация</translation>
     </message>
     <message>
         <source>Show a confirmation dialog when selecting a power action from the system tray menu</source>
@@ -683,6 +735,10 @@ If you&apos;d like to support my work, any contribution would be greatly appreci
     </message>
     <message>
         <source>DDC/CI brightness update rate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>QontrolPanel will boot up when your computer starts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -753,7 +809,7 @@ If you&apos;d like to support my work, any contribution would be greatly appreci
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>(Charging)</source>
+        <source>Notify when the connected headset reaches %1% or lower.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

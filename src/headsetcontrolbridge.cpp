@@ -10,9 +10,16 @@ HeadsetControlBridge::HeadsetControlBridge(QObject *parent)
     : QObject(parent)
 {
     m_instance = this;
-    connect(UserSettings::instance(), &UserSettings::headsetcontrolMonitoringChanged,
+    UserSettings* settings = UserSettings::instance();
+
+    connect(settings, &UserSettings::headsetcontrolMonitoringChanged,
             this, [this]() {
                 setMonitoringEnabled(UserSettings::instance()->headsetcontrolMonitoring());
+            });
+    connect(settings, &UserSettings::headsetcontrolLowBatteryThresholdChanged,
+            this, [this]() {
+                updateLowBatteryNotificationState();
+                emit batteryIconChanged();
             });
     QTimer::singleShot(100, this, &HeadsetControlBridge::connectToMonitor);
 }
@@ -77,6 +84,7 @@ void HeadsetControlBridge::connectToMonitor()
         emit deviceNameChanged();
         emit batteryStatusChanged();
         emit batteryLevelChanged();
+        emit batteryIconChanged();
         emit chatMixChanged();
         emit anyDeviceFoundChanged();
         emit testModeEnabledChanged();
@@ -207,6 +215,25 @@ int HeadsetControlBridge::batteryLevel() const
     return monitor ? monitor->batteryLevel() : -1;
 }
 
+QString HeadsetControlBridge::batteryIcon() const
+{
+    const int level = batteryLevel();
+    const QString status = batteryStatus();
+    const int lowBatteryThreshold = UserSettings::instance()->headsetcontrolLowBatteryThreshold();
+
+    if (status == "BATTERY_UNAVAILABLE" || level < 0) {
+        return QString();
+    }
+
+    QString icon;
+    if (status == "BATTERY_CHARGING") {
+        icon += QString::fromUtf8("⚡︎");
+    }
+
+    icon += level <= lowBatteryThreshold ? QString::fromUtf8("🪫") : QString::fromUtf8("🔋");
+    return icon;
+}
+
 int HeadsetControlBridge::chatMix() const
 {
     HeadsetControlMonitor* monitor = findMonitor();
@@ -244,22 +271,14 @@ void HeadsetControlBridge::onMonitorDeviceNameChanged()
 void HeadsetControlBridge::onMonitorBatteryStatusChanged()
 {
     emit batteryStatusChanged();
+    emit batteryIconChanged();
 }
 
 void HeadsetControlBridge::onMonitorBatteryLevelChanged()
 {
-    int level = batteryLevel();
-
-    if (level < 20 && level >= 0) {
-        if (!m_lowBatteryNotificationSent && UserSettings::instance()->enableNotifications()) {
-            emit lowHeadsetBattery();
-            m_lowBatteryNotificationSent = true;
-        }
-    } else if (level >= 20 && UserSettings::instance()->enableNotifications()) {
-        m_lowBatteryNotificationSent = false;
-    }
-
+    updateLowBatteryNotificationState();
     emit batteryLevelChanged();
+    emit batteryIconChanged();
 }
 
 void HeadsetControlBridge::onMonitorChatMixChanged()
@@ -274,6 +293,22 @@ void HeadsetControlBridge::onMonitorAnyDeviceFoundChanged()
     }
 
     emit anyDeviceFoundChanged();
+}
+
+void HeadsetControlBridge::updateLowBatteryNotificationState()
+{
+    const int level = batteryLevel();
+    const int lowBatteryThreshold = UserSettings::instance()->headsetcontrolLowBatteryThreshold();
+
+    if (level < 0 || level > lowBatteryThreshold || !UserSettings::instance()->enableNotifications()) {
+        m_lowBatteryNotificationSent = false;
+        return;
+    }
+
+    if (!m_lowBatteryNotificationSent) {
+        emit lowHeadsetBattery();
+        m_lowBatteryNotificationSent = true;
+    }
 }
 
 void HeadsetControlBridge::onMonitorTestModeEnabledChanged()

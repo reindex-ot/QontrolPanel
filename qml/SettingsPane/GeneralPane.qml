@@ -23,11 +23,36 @@ ColumnLayout {
             Card {
                 Layout.fillWidth: true
                 title: qsTr("Run at system startup")
-                description: qsTr("QSS will boot up when your computer starts")
+                description: qsTr("QontrolPanel will boot up when your computer starts")
 
                 additionalControl: LabeledSwitch {
                     checked: StartupShortcutBridge.getShortcutState()
                     onClicked: StartupShortcutBridge.setStartupShortcut(checked)
+                }
+            }
+
+            Card {
+                Layout.fillWidth: true
+                title: qsTr("Settings startup page")
+                description: qsTr("Choose which settings page opens when the settings window is shown")
+                additionalControl: CustomComboBox {
+                    Layout.preferredHeight: 35
+                    model: [
+                        qsTr("General"),
+                        qsTr("Components"),
+                        qsTr("Appearance"),
+                        qsTr("Media Overlay"),
+                        qsTr("ChatMix"),
+                        qsTr("Shortcuts"),
+                        qsTr("App Hotkeys"),
+                        qsTr("HeadsetControl"),
+                        qsTr("Renaming"),
+                        qsTr("Language"),
+                        qsTr("Updates"),
+                        qsTr("Debug")
+                    ]
+                    currentIndex: UserSettings.settingsStartupPage
+                    onActivated: UserSettings.settingsStartupPage = currentIndex
                 }
             }
 

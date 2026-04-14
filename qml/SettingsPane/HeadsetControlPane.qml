@@ -83,10 +83,9 @@ ColumnLayout {
                     Layout.fillWidth: true
                     title: qsTr("Device battery")
                     visible: HeadsetControlBridge.batteryStatus !== "BATTERY_UNAVAILABLE" && HeadsetControlBridge.anyDeviceFound
-                    description: qsTr("Current battery level of the connected headset") +
-                                 (HeadsetControlBridge.batteryStatus === "BATTERY_CHARGING" ? "\n" + "⚡︎" + qsTr("(Charging)") : "")
+                    description: qsTr("Current battery level of the connected headset")
                     additionalControl: Label {
-                        text: "🔋" + HeadsetControlBridge.batteryLevel + "%"
+                        text: HeadsetControlBridge.batteryIcon + HeadsetControlBridge.batteryLevel + "%"
                     }
                 }
 
@@ -94,11 +93,30 @@ ColumnLayout {
                     visible: HeadsetControlBridge.anyDeviceFound
                     Layout.fillWidth: true
                     title: qsTr("Notification on low battery")
-                    additionalControl: Switch {
-                        checked: UserSettings.enableNotifications
-                        onClicked: {
-                            UserSettings.enableNotifications = checked
-                            HeadsetControlBridge.notificationsEnabled = checked
+                    description: qsTr("Notify when the connected headset reaches %1% or lower.").arg(UserSettings.headsetcontrolLowBatteryThreshold)
+                    additionalControl: RowLayout {
+                        spacing: 8
+
+                        SpinBox {
+                            Layout.preferredHeight: 35
+                            Layout.preferredWidth: 160
+                            from: 1
+                            to: 30
+                            value: UserSettings.headsetcontrolLowBatteryThreshold
+                            editable: true
+                            onValueModified: UserSettings.headsetcontrolLowBatteryThreshold = value
+                        }
+
+                        Label {
+                            text: "%"
+                            opacity: 0.7
+                        }
+
+                        LabeledSwitch {
+                            checked: UserSettings.enableNotifications
+                            onClicked: {
+                                UserSettings.enableNotifications = checked
+                            }
                         }
                     }
                 }

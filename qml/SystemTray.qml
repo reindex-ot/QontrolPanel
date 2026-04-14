@@ -12,6 +12,11 @@ Platform.SystemTrayIcon {
     tooltip: getTooltip()
 
     onActivated: function(reason) {
+        if (reason === Platform.SystemTrayIcon.DoubleClick) {
+            systemTray.settingsWindowRequested()
+            return
+        }
+
         if (reason === Platform.SystemTrayIcon.Trigger) {
             systemTray.togglePanelRequested()
         }
@@ -71,12 +76,8 @@ Platform.SystemTrayIcon {
 
         var batteryText = "\n" + "🎧" + HeadsetControlBridge.deviceName + "\n";
 
-        if (HeadsetControlBridge.batteryStatus === "BATTERY_CHARGING") {
-            batteryText += "⚡︎"
-        }
-
-        batteryText += "🔋";
-            batteryText += HeadsetControlBridge.batteryLevel + "%";
+        batteryText += HeadsetControlBridge.batteryIcon;
+        batteryText += HeadsetControlBridge.batteryLevel + "%";
         if (HeadsetControlBridge.hasChatMixCapability) {
             batteryText += " " + "🎤" + qsTr("ChatMix") + ": " + HeadsetControlBridge.chatMix;
         }

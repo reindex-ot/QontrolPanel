@@ -646,8 +646,60 @@ If you&apos;d like to support my work, any contribution would be greatly appreci
         <translation>开机自启</translation>
     </message>
     <message>
-        <source>QSS will boot up when your computer starts</source>
-        <translation>QSS 将随系统启动时自动启动</translation>
+        <source>Settings startup page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Choose which settings page opens when the settings window is shown</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>General</source>
+        <translation type="unfinished">常规</translation>
+    </message>
+    <message>
+        <source>Components</source>
+        <translation type="unfinished">组件</translation>
+    </message>
+    <message>
+        <source>Appearance</source>
+        <translation type="unfinished">外观</translation>
+    </message>
+    <message>
+        <source>Media Overlay</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ChatMix</source>
+        <translation type="unfinished">ChatMix</translation>
+    </message>
+    <message>
+        <source>Shortcuts</source>
+        <translation type="unfinished">快捷键</translation>
+    </message>
+    <message>
+        <source>App Hotkeys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>HeadsetControl</source>
+        <translation type="unfinished">耳机控制</translation>
+    </message>
+    <message>
+        <source>Renaming</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished">语言</translation>
+    </message>
+    <message>
+        <source>Updates</source>
+        <translation type="unfinished">更新</translation>
+    </message>
+    <message>
+        <source>Debug</source>
+        <translation type="unfinished">调试</translation>
     </message>
     <message>
         <source>Show a confirmation dialog when selecting a power action from the system tray menu</source>
@@ -684,6 +736,10 @@ If you&apos;d like to support my work, any contribution would be greatly appreci
     <message>
         <source>DDC/CI brightness update rate</source>
         <translation>DDC/CI 亮度更新率</translation>
+    </message>
+    <message>
+        <source>QontrolPanel will boot up when your computer starts</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Controls how frequently brightness commands are sent to external monitors</source>
@@ -753,7 +809,7 @@ If you&apos;d like to support my work, any contribution would be greatly appreci
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>(Charging)</source>
+        <source>Notify when the connected headset reaches %1% or lower.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

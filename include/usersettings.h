@@ -36,6 +36,7 @@ class UserSettings : public QObject
     Q_PROPERTY(int micMuteShortcutModifiers READ micMuteShortcutModifiers WRITE setMicMuteShortcutModifiers NOTIFY micMuteShortcutModifiersChanged)
     Q_PROPERTY(bool autoUpdateTranslations READ autoUpdateTranslations WRITE setAutoUpdateTranslations NOTIFY autoUpdateTranslationsChanged)
     Q_PROPERTY(bool firstRun READ firstRun WRITE setFirstRun NOTIFY firstRunChanged)
+    Q_PROPERTY(int settingsStartupPage READ settingsStartupPage WRITE setSettingsStartupPage NOTIFY settingsStartupPageChanged)
 
     Q_PROPERTY(int trayIconTheme READ trayIconTheme WRITE setTrayIconTheme NOTIFY trayIconThemeChanged)
     Q_PROPERTY(int iconStyle READ iconStyle WRITE setIconStyle NOTIFY iconStyleChanged)
@@ -60,6 +61,7 @@ class UserSettings : public QObject
     Q_PROPERTY(int panelStyle READ panelStyle WRITE setPanelStyle NOTIFY panelStyleChanged)
     Q_PROPERTY(int headsetcontrolFetchRate READ headsetcontrolFetchRate WRITE setHeadsetcontrolFetchRate NOTIFY headsetcontrolFetchRateChanged)
     Q_PROPERTY(bool enableNotifications READ enableNotifications WRITE setEnableNotifications NOTIFY enableNotificationsChanged)
+    Q_PROPERTY(int headsetcontrolLowBatteryThreshold READ headsetcontrolLowBatteryThreshold WRITE setHeadsetcontrolLowBatteryThreshold NOTIFY headsetcontrolLowBatteryThresholdChanged)
 
     Q_PROPERTY(bool enableMediaOverlay READ enableMediaOverlay WRITE setEnableMediaOverlay NOTIFY enableMediaOverlayChanged)
     Q_PROPERTY(int mediaOverlayPosition READ mediaOverlayPosition WRITE setMediaOverlayPosition NOTIFY mediaOverlayPositionChanged)
@@ -98,6 +100,7 @@ public:
     int micMuteShortcutModifiers() const { return m_micMuteShortcutModifiers; }
     bool autoUpdateTranslations() const { return m_autoUpdateTranslations; }
     bool firstRun() const { return m_firstRun; }
+    int settingsStartupPage() const { return m_settingsStartupPage; }
 
     int trayIconTheme() const { return m_trayIconTheme; }
     int iconStyle() const { return m_iconStyle; }
@@ -122,6 +125,7 @@ public:
     int panelStyle() const { return m_panelStyle; }
     int headsetcontrolFetchRate() const { return m_headsetcontrolFetchRate; }
     bool enableNotifications() const { return m_enableNotifications; }
+    int headsetcontrolLowBatteryThreshold() const { return m_headsetcontrolLowBatteryThreshold; }
 
     bool enableMediaOverlay() const { return m_enableMediaOverlay; }
     int mediaOverlayPosition() const { return m_mediaOverlayPosition; }
@@ -156,6 +160,7 @@ public:
     void setMicMuteShortcutModifiers(int value);
     void setAutoUpdateTranslations(bool value);
     void setFirstRun(bool value);
+    void setSettingsStartupPage(int value);
 
     void setTrayIconTheme(int value);
     void setIconStyle(int value);
@@ -180,6 +185,7 @@ public:
     void setPanelStyle(int value);
     void setHeadsetcontrolFetchRate(int value);
     void setEnableNotifications(bool value);
+    void setHeadsetcontrolLowBatteryThreshold(int value);
 
     void setEnableMediaOverlay(bool value);
     void setMediaOverlayPosition(int value);
@@ -214,6 +220,7 @@ signals:
     void micMuteShortcutModifiersChanged();
     void autoUpdateTranslationsChanged();
     void firstRunChanged();
+    void settingsStartupPageChanged();
 
     void trayIconThemeChanged();
     void iconStyleChanged();
@@ -238,6 +245,7 @@ signals:
     void panelStyleChanged();
     void headsetcontrolFetchRateChanged();
     void enableNotificationsChanged();
+    void headsetcontrolLowBatteryThresholdChanged();
 
     void enableMediaOverlayChanged();
     void mediaOverlayPositionChanged();
@@ -278,6 +286,7 @@ private:
     int m_micMuteShortcutModifiers;
     bool m_autoUpdateTranslations;
     bool m_firstRun;
+    int m_settingsStartupPage;
 
     int m_trayIconTheme;
     int m_iconStyle;
@@ -302,6 +311,7 @@ private:
     int m_panelStyle;
     int m_headsetcontrolFetchRate;
     bool m_enableNotifications;
+    int m_headsetcontrolLowBatteryThreshold;
 
     bool m_enableMediaOverlay;
     int m_mediaOverlayPosition;

@@ -181,7 +181,18 @@ ApplicationWindow {
 
     SystemTray {
         id: systemTray
-        onTogglePanelRequested: {
+        onTogglePanelRequested: trayToggleTimer.restart()
+        onSettingsWindowRequested: {
+            trayToggleTimer.stop()
+            settingsWindow.showPreferredPane()
+        }
+    }
+
+    Timer {
+        id: trayToggleTimer
+        interval: 200
+        repeat: false
+        onTriggered: {
             if (!panel.visible) {
                 panel.showPanel()
             }
@@ -550,12 +561,6 @@ ApplicationWindow {
 
     SettingsWindow {
         id: settingsWindow
-        Connections {
-            target: systemTray
-            function onSettingsWindowRequested() {
-                settingsWindow.show()
-            }
-        }
     }
 
     Item {
@@ -1222,7 +1227,7 @@ ApplicationWindow {
                         Layout.rightMargin: -14
                         Layout.bottomMargin: -14
                         onHidePanel: panel.hidePanel()
-                        onShowSettingsWindow: settingsWindow.show()
+                        onShowSettingsWindow: settingsWindow.showPreferredPane()
                         onShowUpdatePane: settingsWindow.showUpdatePane()
                         onShowPowerConfirmationWindow: function(action) {
                             powerConfirmationWindow.setAction(action)
