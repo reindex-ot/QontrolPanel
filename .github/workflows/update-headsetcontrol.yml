@@ -1,0 +1,246 @@
+name: Update HeadsetControl
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-headsetcontrol:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Check for upstream HeadsetControl updates
+        id: submodule
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git submodule sync --recursive
+          git -C dependencies/headsetcontrol fetch origin master --quiet
+
+          current_sha=$(git -C dependencies/headsetcontrol rev-parse HEAD)
+          upstream_sha=$(git -C dependencies/headsetcontrol rev-parse origin/master)
+          commits_behind=$(git -C dependencies/headsetcontrol rev-list --count HEAD..origin/master)
+
+          echo "current_sha=$current_sha" >> "$GITHUB_OUTPUT"
+          echo "upstream_sha=$upstream_sha" >> "$GITHUB_OUTPUT"
+          echo "commits_behind=$commits_behind" >> "$GITHUB_OUTPUT"
+
+          if [ "$current_sha" = "$upstream_sha" ]; then
+            echo "needs_update=false" >> "$GITHUB_OUTPUT"
+            echo "HeadsetControl submodule is already up to date." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "needs_update=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "## HeadsetControl update detected"
+            echo ""
+            echo "- Current SHA: $current_sha"
+            echo "- Upstream SHA: $upstream_sha"
+            echo "- Commits behind: $commits_behind"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Get current project version
+        if: steps.submodule.outputs.needs_update == 'true'
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version=$(python3 <<'PY'
+          import pathlib
+          import re
+
+          content = pathlib.Path("CMakeLists.txt").read_text(encoding="utf-8")
+          match = re.search(r"project\s*\(\s*QontrolPanel\s+VERSION\s+([^\s\)]+)", content, re.IGNORECASE)
+          if not match:
+              raise SystemExit("Unable to extract project version from CMakeLists.txt")
+          print(match.group(1))
+          PY
+          )
+
+          echo "current_version=$version" >> "$GITHUB_OUTPUT"
+          echo "Current project version: $version" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check whether version is already released or tagged
+        if: steps.submodule.outputs.needs_update == 'true'
+        id: release_state
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const version = '${{ steps.version.outputs.current_version }}';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            let hasRelease = false;
+            let hasTag = false;
+
+            try {
+              await github.rest.repos.getReleaseByTag({ owner, repo, tag: version });
+              hasRelease = true;
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
+
+            try {
+              await github.rest.git.getRef({ owner, repo, ref: `tags/${version}` });
+              hasTag = true;
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
+
+            const alreadyReleased = hasRelease || hasTag;
+
+            core.setOutput('has_release', String(hasRelease));
+            core.setOutput('has_tag', String(hasTag));
+            core.setOutput('already_released', String(alreadyReleased));
+
+      - name: Prepare version bump if needed
+        if: steps.submodule.outputs.needs_update == 'true'
+        id: version_update
+        shell: bash
+        env:
+          CURRENT_VERSION: ${{ steps.version.outputs.current_version }}
+          ALREADY_RELEASED: ${{ steps.release_state.outputs.already_released }}
+        run: |
+          set -euo pipefail
+
+          new_version="$CURRENT_VERSION"
+          version_bumped=false
+
+          if [ "$ALREADY_RELEASED" = "true" ]; then
+            new_version=$(python3 <<'PY'
+          import os
+          import re
+
+          version = os.environ["CURRENT_VERSION"].strip()
+          match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
+          if not match:
+              raise SystemExit(f"Version '{version}' is not in x.y.z format")
+
+          major, minor, patch = (int(part) for part in match.groups())
+          print(f"{major}.{minor}.{patch + 1}")
+          PY
+            )
+
+            CURRENT_VERSION="$CURRENT_VERSION" NEW_VERSION="$new_version" python3 <<'PY'
+          import os
+          import pathlib
+          import re
+
+          current_version = os.environ["CURRENT_VERSION"]
+          new_version = os.environ["NEW_VERSION"]
+          path = pathlib.Path("CMakeLists.txt")
+          content = path.read_text(encoding="utf-8")
+          updated, count = re.subn(
+              rf"(project\s*\(\s*QontrolPanel\s+VERSION\s+){re.escape(current_version)}(\b)",
+              rf"\1{new_version}\2",
+              content,
+              count=1,
+              flags=re.IGNORECASE,
+          )
+
+          if count != 1:
+              raise SystemExit("Failed to update project version in CMakeLists.txt")
+
+          path.write_text(updated, encoding="utf-8")
+          PY
+
+            version_bumped=true
+          fi
+
+          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+          echo "version_bumped=$version_bumped" >> "$GITHUB_OUTPUT"
+
+      - name: Update HeadsetControl submodule
+        if: steps.submodule.outputs.needs_update == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git submodule update --init --remote --checkout -- dependencies/headsetcontrol
+          updated_sha=$(git -C dependencies/headsetcontrol rev-parse HEAD)
+
+          if [ "$updated_sha" != "${{ steps.submodule.outputs.upstream_sha }}" ]; then
+            echo "Updated submodule SHA $updated_sha does not match expected upstream SHA ${{ steps.submodule.outputs.upstream_sha }}" >&2
+            exit 1
+          fi
+
+      - name: Build PR metadata
+        if: steps.submodule.outputs.needs_update == 'true'
+        id: pr
+        shell: bash
+        env:
+          CURRENT_VERSION: ${{ steps.version.outputs.current_version }}
+          NEW_VERSION: ${{ steps.version_update.outputs.new_version }}
+          VERSION_BUMPED: ${{ steps.version_update.outputs.version_bumped }}
+          CURRENT_SHA: ${{ steps.submodule.outputs.current_sha }}
+          UPSTREAM_SHA: ${{ steps.submodule.outputs.upstream_sha }}
+          COMMITS_BEHIND: ${{ steps.submodule.outputs.commits_behind }}
+          HAS_RELEASE: ${{ steps.release_state.outputs.has_release }}
+          HAS_TAG: ${{ steps.release_state.outputs.has_tag }}
+        run: |
+          set -euo pipefail
+
+          if [ "$VERSION_BUMPED" = "true" ]; then
+            commit_message="Update HeadsetControl and bump version to $NEW_VERSION [skip ci]"
+            title="Update HeadsetControl and bump version to $NEW_VERSION"
+            version_line="- Version: $CURRENT_VERSION -> $NEW_VERSION"
+          else
+            commit_message="Update HeadsetControl submodule [skip ci]"
+            title="Update HeadsetControl submodule"
+            version_line="- Version: unchanged at $CURRENT_VERSION"
+          fi
+
+          body_file="$RUNNER_TEMP/update-headsetcontrol-pr-body.md"
+          {
+            echo "Automated weekly update for the HeadsetControl dependency."
+            echo
+            echo "- Current submodule SHA: $CURRENT_SHA"
+            echo "- Upstream submodule SHA: $UPSTREAM_SHA"
+            echo "- Commits behind upstream: $COMMITS_BEHIND"
+            echo "$version_line"
+            echo "- Matching GitHub release exists for current version: $HAS_RELEASE"
+            echo "- Matching git tag exists for current version: $HAS_TAG"
+            echo
+            echo "This PR was created automatically by the scheduled HeadsetControl update workflow."
+          } > "$body_file"
+
+          echo "commit_message=$commit_message" >> "$GITHUB_OUTPUT"
+          echo "title=$title" >> "$GITHUB_OUTPUT"
+          echo "body_file=$body_file" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        if: steps.submodule.outputs.needs_update == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: ${{ steps.pr.outputs.commit_message }}
+          committer: GitHub Action <action@github.com>
+          author: GitHub Action <action@github.com>
+          branch: automation/update-headsetcontrol
+          base: main
+          delete-branch: true
+          title: ${{ steps.pr.outputs.title }}
+          body-path: ${{ steps.pr.outputs.body_file }}
+          add-paths: |
+            CMakeLists.txt
+            dependencies/headsetcontrol
