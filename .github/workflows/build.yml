@@ -9,7 +9,7 @@ on:
       - "i18n/**"
       - "i18n_compiled/**"
       - "dependencies/headsetcontrol/**"
-      - ".github/workflows/*.yml"
+      - "**/*.yml"
       - ".assets/**"
 
   pull_request:
@@ -21,7 +21,7 @@ on:
       - "i18n/**"
       - "i18n_compiled/**"
       - "dependencies/headsetcontrol/**"
-      - ".github/workflows/*.yml"
+      - "**/*.yml"
       - ".assets/**"
 
   workflow_dispatch:

@@ -14,7 +14,10 @@ It provide output and input volume / device / mute control as well as applicatio
 ![image](.assets/screenshot_hsc.png)
 For a list of supported headsets visit [here](https://github.com/Sapd/HeadsetControl).
 
-If you like my work, please consider supporting me !
+If you like my work, please consider supporting me ! <br><br>
+<a href="https://ko-fi.com/ChrisLauinger77" target="_blank">
+<img src="https://cdn.prod.website-files.com/5c14e387dab576fe667689cf/670f5a01cf2da94a032117b9_support_me_on_kofi_red-p-500.png" alt="Support me on Ko-fi" width="30%">
+</a>
 
 ## Usage
 
@@ -31,11 +34,13 @@ Translators should have a look [here](.github/TRANSLATIONS.md).
 
 ### Winget
 
-`winget install ChrisLauinger77.QontrolPanel`
+```pwsh
+winget install ChrisLauinger77.QontrolPanel
+```
 
 ### Manual
 
-Download latest version [here](https://github.com/ChrisLauinger77/QontrolPanel/releases/latest).  
+Download latest version [here](https://github.com/ChrisLauinger77/QontrolPanel/releases/latest).
 Use the provided installer or download the archive, extract it, and run `bin/QontrolPanel.exe`.
 
 ## Build the project
@@ -49,3 +54,7 @@ See [here](.github/BUILDING.md).
 - Used icons from FlatIcon and VeryIcon
 - Application icon from [Yogi Aprelliyanto](https://www.flaticon.com/authors/yogi-aprelliyanto)
 - [Sapd](https://github.com/sapd/) for [HeadsetControl](https://github.com/Sapd/HeadsetControl)
+
+```
+
+```
