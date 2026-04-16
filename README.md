@@ -12,7 +12,7 @@ It provide output and input volume / device / mute control as well as applicatio
 ## HeadsetControl integration
 
 ![image](.assets/screenshot_hsc.png)
-For a list of supported headsets visit [here](https://github.com/Sapd/HeadsetControl).
+For a list of supported headsets visit [here](https://github.com/Sapd/HeadsetControl?tab=readme-ov-file#supported-devices).
 
 If you like my work, please consider supporting me ! <br><br>
 <a href="https://ko-fi.com/ChrisLauinger77" target="_blank">
