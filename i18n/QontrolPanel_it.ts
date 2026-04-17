@@ -918,7 +918,7 @@ Puoi abilitarlo nella scheda Componenti.</translation>
     <name>LanguagePane</name>
     <message>
         <source>Application language</source>
-        <translation>Lingua applicazione</translation>
+        <translation>Lingua interfaccia</translation>
     </message>
     <message>
         <source>System</source>
@@ -1278,7 +1278,7 @@ Puoi abilitarlo nella scheda Componenti.</translation>
     </message>
     <message>
         <source>Exit</source>
-        <translation>Esci da QuickSoundSwitcher</translation>
+        <translation>Esci da QontrolPanel</translation>
     </message>
     <message>
         <source>ChatMix</source>
