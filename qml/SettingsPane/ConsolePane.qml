@@ -8,7 +8,7 @@ ColumnLayout {
     id: logViewer
     spacing: 3
 
-    property string selectedSender: "All"
+    property string selectedSender: LogBridge.allFilterValue
     property bool autoScroll: true
 
     Component.onCompleted: {
@@ -28,6 +28,10 @@ ColumnLayout {
         for (let i = 0; i < categories.length; i++) {
             senderOptions.append({ text: categories[i], value: categories[i] })
         }
+    }
+
+    function getFilterLabel(filterValue) {
+        return filterValue === LogBridge.allFilterValue ? qsTr("All") : filterValue
     }
 
     function getSenderColor(sender) {
@@ -68,7 +72,7 @@ ColumnLayout {
         header += qsTr("Version: %1").arg(version) + "\n"
         header += qsTr("Commit: %1").arg(commitHash) + "\n"
         header += qsTr("Export Date: %1").arg(currentDate) + "\n"
-        header += qsTr("Filter: %1").arg(selectedSender) + "\n"
+        header += qsTr("Filter: %1").arg(getFilterLabel(selectedSender)) + "\n"
         header += qsTr("Total Entries: %1").arg(LogBridge.filteredModel.count) + "\n"
         header += "========================\n\n"
 
@@ -122,7 +126,7 @@ ColumnLayout {
             Layout.preferredWidth: 200
             model: ListModel {
                 id: senderOptions
-                ListElement { text: qsTr("All"); value: "All" }
+                ListElement { text: qsTr("All"); value: "__ALL__" }
             }
             textRole: "text"
             valueRole: "value"

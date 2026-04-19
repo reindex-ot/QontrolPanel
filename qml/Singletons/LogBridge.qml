@@ -8,7 +8,8 @@ Item {
     property int maxLogEntries: 500
     property ListModel logModel: ListModel {}
     property ListModel filteredModel: ListModel {}
-    property string currentFilter: "All"
+    readonly property string allFilterValue: "__ALL__"
+    property string currentFilter: ""
     property var senderRegex: /^\[[^\]]+\]\s+(\w+)\s+\[\w+\]/
 
     signal logEntryAdded(string message, int type, string sender)
@@ -16,6 +17,7 @@ Item {
 
     Component.onCompleted: {
         LogManager.setQmlReady()
+        applyFilter(allFilterValue)
     }
 
     Connections {
@@ -50,7 +52,7 @@ Item {
         logModel.append(newEntry)
 
         // Only add to filtered model if it matches current filter
-        if (currentFilter === qsTr("All") || sender === currentFilter) {
+        if (currentFilter === allFilterValue || sender === currentFilter) {
             filteredModel.append(newEntry)
         }
 
@@ -74,7 +76,7 @@ Item {
         currentFilter = selectedSender
         filteredModel.clear()
 
-        if (selectedSender === qsTr("All")) {
+        if (selectedSender === allFilterValue) {
             // Copy all entries
             for (let i = 0; i < logModel.count; i++) {
                 filteredModel.append(logModel.get(i))
