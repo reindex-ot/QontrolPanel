@@ -5,7 +5,7 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
         CACHE STRING "Vcpkg toolchain file")
 endif()
 
-project(QontrolPanel VERSION 1.14.3 LANGUAGES C CXX)
+project(QontrolPanel VERSION 1.15.0 LANGUAGES C CXX)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 set(CMAKE_CXX_STANDARD 20)
@@ -182,12 +182,12 @@ set(QML_FILES
     qml/SettingsPane/ComponentsPane.qml
     qml/SettingsPane/GeneralPane.qml
     qml/SettingsPane/LanguagePane.qml
-    qml/SettingsPane/DebugPane.qml
+    qml/SettingsPane/UpdatePane.qml
     qml/SettingsPane/CommAppsPane.qml
     qml/SettingsPane/ShortcutsPane.qml
     qml/SettingsPane/AppHotkeysPane.qml
     qml/SettingsPane/HeadsetControlPane.qml
-    qml/SettingsPane/ConsolePane.qml
+    qml/SettingsPane/DebugPane.qml
     qml/SettingsPane/DeviceRenamingPane.qml
     qml/SettingsPane/MediaOverlayPane.qml
     qml/Debug/DebugRectangle.qml

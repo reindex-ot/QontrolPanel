@@ -1,25 +1,167 @@
 pragma ComponentBehavior: Bound
-
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls.FluentWinUI3
 import ChrisLauinger77.QontrolPanel
 
 ColumnLayout {
+    id: logViewer
     spacing: 3
 
+    property string selectedSender: LogBridge.allFilterValue
+    property bool autoScroll: true
+
+    Component.onCompleted: {
+        LogBridge.applyFilter(selectedSender);
+        updateCategoryList();
+    }
+
+    Connections {
+        target: LogManager
+        function onCategoryRegistered(category) {
+            senderOptions.append({
+                text: category,
+                value: category
+            });
+        }
+    }
+
+    function updateCategoryList() {
+        let categories = LogManager.getAllCategories();
+        for (let i = 0; i < categories.length; i++) {
+            senderOptions.append({
+                text: categories[i],
+                value: categories[i]
+            });
+        }
+    }
+
+    function getFilterLabel(filterValue) {
+        return filterValue === LogBridge.allFilterValue ? qsTr("All") : filterValue;
+    }
+
+    function getSenderColor(sender) {
+        const colorMap = {
+            "AudioManager": "#ff1493",
+            "MediaSessionManager": "#00bfff",
+            "MonitorManager": "#32cd32",
+            "SoundPanelBridge": "#ff6600",
+            "Updater": "#9932cc",
+            "ShortcutManager": "#1e90ff",
+            "Core": "#dc143c",
+            "LocalServer": "#8a2be2",
+            "UI": "#ffd700",
+            "PowerManager": "#ff69b4",
+            "HeadsetControlManager": "#7fff00",
+            "WindowFocusManager": "#00ff7f"
+        };
+
+        if (colorMap[sender]) {
+            return colorMap[sender];
+        }
+
+        let hash = 0;
+        for (let i = 0; i < sender.length; i++) {
+            hash = sender.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash % 360);
+        return `hsl(${hue}, 70%, 60%)`;
+    }
+
+    function copyAllLogs() {
+        let version = Updater.getAppVersion();
+        let commitHash = Updater.getCommitHash();
+        let currentDate = new Date().toISOString().split('T')[0];
+        let header = qsTr("QontrolPanel Log Export") + "\n";
+        header += "========================\n";
+        header += "Version: " + version + "\n";
+        header += "Commit: " + commitHash + "\n";
+        header += "Export Date: " + currentDate + "\n";
+        header += "Filter: " + getFilterLabel(selectedSender) + "\n";
+        header += "Total Entries: " + LogBridge.filteredModel.count + "\n";
+        header += "========================\n\n";
+
+        let allLogsText = header;
+        for (let i = 0; i < LogBridge.filteredModel.count; i++) {
+            let item = LogBridge.filteredModel.get(i);
+            allLogsText += item.message + "\n";
+        }
+
+        if (LogBridge.filteredModel.count > 0) {
+            allLogsText = allLogsText.slice(0, -1);
+        }
+
+        hiddenTextEdit.text = allLogsText;
+        hiddenTextEdit.selectAll();
+        hiddenTextEdit.copy();
+    }
+
+    function scrollToBottom() {
+        if (LogBridge.filteredModel.count > 0) {
+            logListView.positionViewAtEnd();
+        }
+    }
+
+    Connections {
+        target: LogBridge
+
+        function onLogEntryAdded(message, type, sender) {
+            if (logViewer.autoScroll) {
+                Qt.callLater(logViewer.scrollToBottom);
+            }
+        }
+    }
+
     Label {
-        text: qsTr("Updates and information")
+        text: qsTr("Console output")
         font.pixelSize: 22
         font.bold: true
         Layout.bottomMargin: 15
     }
 
-    Connections {
-        target: Updater
+    RowLayout {
+        spacing: 10
 
-        function onUpdateFinished(success, message) {
-            toastNotification.showToast(message, success);
+        Label {
+            text: qsTr("Filter by:")
+        }
+
+        CustomComboBox {
+            id: senderFilter
+            Layout.preferredWidth: 200
+            model: ListModel {
+                id: senderOptions
+                ListElement {
+                    text: qsTr("All")
+                    value: "__ALL__"
+                }
+            }
+            textRole: "text"
+            valueRole: "value"
+            onCurrentValueChanged: {
+                logViewer.selectedSender = currentValue;
+                LogBridge.applyFilter(logViewer.selectedSender);
+            }
+        }
+
+        Item {
+            Layout.fillWidth: true
+        }
+
+        CheckBox {
+            text: qsTr("Auto-scroll")
+            checked: logViewer.autoScroll
+            onCheckedChanged: logViewer.autoScroll = checked
+        }
+
+        Button {
+            text: qsTr("Copy All")
+            onClicked: logViewer.copyAllLogs()
+        }
+
+        Button {
+            text: qsTr("Clear")
+            onClicked: LogBridge.clearLogs()
         }
     }
 
@@ -29,227 +171,68 @@ ColumnLayout {
 
         CustomScrollView {
             anchors.fill: parent
+            clip: true
+            background: Rectangle {
+                color: palette.window
+                border.color: Constants.darkMode ? "#3e3e3e" : palette.mid
+                border.width: 1
+                radius: 4
+            }
 
-            ColumnLayout {
-                width: parent.width
-                spacing: 3
-
-                Card {
-                    Layout.fillWidth: true
-                    title: qsTr("Application Updates")
-                    description: Updater.updateAvailable ? qsTr("Version %1 is available").arg(Updater.latestVersion) : ""
-
-                    additionalControl: Column {
-                        spacing: 5
-
-                        NFButton {
-                            id: updateBtn
-                            text: {
-                                if (Updater.isChecking)
-                                    return qsTr("Checking...");
-                                if (Updater.isDownloading)
-                                    return qsTr("Downloading...");
-                                if (Updater.updateAvailable)
-                                    return qsTr("Download and Install");
-                                return qsTr("Check for Updates");
-                            }
-
-                            enabled: !Updater.isChecking && !Updater.isDownloading
-                            onClicked: {
-                                if (Updater.updateAvailable) {
-                                    Updater.downloadAndInstall();
-                                } else {
-                                    Updater.checkForUpdates();
-                                }
-                            }
+            ListView {
+                id: logListView
+                model: LogBridge.filteredModel
+                clip: true
+                delegate: Label {
+                    required property var model
+                    width: logListView.width
+                    wrapMode: Text.Wrap
+                    font.family: "Consolas, Monaco, Courier New, monospace"
+                    font.pixelSize: 12
+                    textFormat: Text.RichText
+                    text: {
+                        let typeColor = "";
+                        switch (model.type) {
+                        case LogManager.Info:
+                            typeColor = "#00ff00";
+                            break;
+                        case LogManager.Warning:
+                            typeColor = "#ff8800";
+                            break;
+                        case LogManager.Critical:
+                            typeColor = "#ff2222";
+                            break;
+                        default:
+                            typeColor = palette.text;
                         }
-
-                        ProgressBar {
-                            width: updateBtn.implicitWidth
-                            from: 0
-                            to: 100
-                            value: Updater.downloadProgress
-                            visible: Updater.isDownloading
-                        }
-                    }
-                }
-
-                Card {
-                    id: releaseNotesCard
-                    Layout.fillWidth: true
-                    title: qsTr("Release notes")
-                    description: qsTr("View what's new in version %1").arg(Updater.latestVersion)
-                    visible: Updater.updateAvailable && Updater.hasReleaseNotes
-                    additionalControl: Button {
-                        text: qsTr("Show")
-                        enabled: Updater.hasReleaseNotes
-                        onClicked: releaseNotesDialog.open()
-                    }
-                }
-
-                Card {
-                    Layout.fillWidth: true
-                    title: qsTr("Auto check for app updates")
-                    description: qsTr("Check for application updates at startup and every 4 hours")
-
-                    additionalControl: LabeledSwitch {
-                        checked: UserSettings.autoFetchForAppUpdates
-                        onClicked: UserSettings.autoFetchForAppUpdates = checked
-                    }
-                }
-
-                Card {
-                    Layout.fillWidth: true
-                    title: qsTr("Application version")
-                    description: ""
-
-                    property int clickCount: 0
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            parent.clickCount++;
-                            if (parent.clickCount >= 5) {
-                                //easterEggDialog.open()
-                                Context.easterEggRequested();
-                                parent.clickCount = 0;
-                            }
+                        let senderColor = logViewer.getSenderColor(model.sender);
+                        let message = model.message || "";
+                        let regex = /^(\[[^\]]+\]\s+)(\w+)(\s+)\[(\w+)\](\s+-.*)$/;
+                        let match = message.match(regex);
+                        if (match) {
+                            let timestamp = match[1];
+                            let sender = match[2];
+                            let spacer1 = match[3];
+                            let type = match[4];
+                            let content = match[5];
+                            return `<span style="color: #888888;">${timestamp}</span><span style="color: ${senderColor};">${sender}</span><span style="color: #888888;">${spacer1}</span><span style="color: ${typeColor};">[${type}]</span><span style="color: ${palette.text};">${content}</span>`;
+                        } else {
+                            return `<span style="color: ${typeColor};">${message}</span>`;
                         }
                     }
-                    additionalControl: Label {
-                        text: Updater.getAppVersion()
-                        opacity: 0.5
-                    }
-                }
-
-                Card {
-                    Layout.fillWidth: true
-                    title: qsTr("QT version")
-                    description: ""
-
-                    additionalControl: Label {
-                        text: Updater.getQtVersion()
-                        opacity: 0.5
-                    }
-                }
-
-                Card {
-                    Layout.fillWidth: true
-                    title: qsTr("Commit")
-                    description: ""
-
-                    additionalControl: Label {
-                        text: Updater.getCommitHash()
-                        opacity: 0.5
-                    }
-                }
-
-                Card {
-                    Layout.fillWidth: true
-                    title: qsTr("Build date")
-                    description: ""
-
-                    additionalControl: Label {
-                        text: Updater.getBuildTimestamp()
-                        opacity: 0.5
-                    }
-                }
-                Card {
-                    Layout.fillWidth: true
-                    title: qsTr("GitHub repository")
-                    description: "https://github.com/ChrisLauinger77/QontrolPanel"
-
-                    additionalControl: Button {
-                        text: qsTr("View on GitHub")
-                        onClicked: Qt.openUrlExternally("https://github.com/ChrisLauinger77/QontrolPanel")
-                    }
+                    topPadding: 1
+                    bottomPadding: 1
+                    leftPadding: 5
+                    rightPadding: 5
                 }
             }
         }
 
-        Rectangle {
-            id: toastNotification
-
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 20
-
-            width: Math.min(toastText.implicitWidth + 40, parent.width - 40)
-            height: 50
-            radius: 8
-
+        TextEdit {
+            id: hiddenTextEdit
             visible: false
-            opacity: 0
-
-            property bool isSuccess: true
-
-            color: isSuccess ? "#4CAF50" : "#F44336"
-
-            function showToast(message, success) {
-                toastText.text = message;
-                isSuccess = success;
-                visible = true;
-                showAnimation.start();
-                hideTimer.start();
-            }
-
-            Label {
-                id: toastText
-                anchors.centerIn: parent
-                color: "white"
-                font.pixelSize: 14
-                wrapMode: Text.WordWrap
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            NumberAnimation {
-                id: showAnimation
-                target: toastNotification
-                property: "opacity"
-                from: 0
-                to: 1
-                duration: 300
-                easing.type: Easing.OutQuad
-            }
-
-            NumberAnimation {
-                id: hideAnimation
-                target: toastNotification
-                property: "opacity"
-                from: 1
-                to: 0
-                duration: 300
-                easing.type: Easing.InQuad
-                onFinished: toastNotification.visible = false
-            }
-
-            Timer {
-                id: hideTimer
-                interval: 3000
-                onTriggered: hideAnimation.start()
-            }
-        }
-
-        Dialog {
-            id: releaseNotesDialog
-            title: qsTr("Version %1").arg(Updater.latestVersion)
-            modal: true
-            width: 400
-            height: 300
-            anchors.centerIn: parent
-            standardButtons: Dialog.Close
-
-            CustomScrollView {
-                anchors.fill: parent
-                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-                Label {
-                    text: Updater.releaseNotes || qsTr("No release notes available")
-                    width: releaseNotesDialog.width - 60
-                    wrapMode: Text.WordWrap
-                    textFormat: Text.PlainText
-                }
-            }
+            Layout.preferredWidth: 0
+            Layout.preferredHeight: 0
         }
     }
 }
