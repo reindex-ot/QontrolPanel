@@ -1367,6 +1367,10 @@ You can enable it in the Components tab.</source>
         <translation>HeadsetControl</translation>
     </message>
     <message>
+        <source>Fetch</source>
+        <translation>Récupérer</translation>
+    </message>
+    <message>
         <source>Equalizer Preset</source>
         <translation>Préréglage de l&apos;égaliseur</translation>
     </message>
@@ -1389,6 +1393,10 @@ You can enable it in the Components tab.</source>
     <message>
         <source>QontrolPanel</source>
         <translation>QontrolPanel</translation>
+    </message>
+    <message>
+        <source>Device disconnected</source>
+        <translation>Appareil déconnecté</translation>
     </message>
     <message>
         <source>ChatMix</source>

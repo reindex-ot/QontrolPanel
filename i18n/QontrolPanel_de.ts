@@ -1348,6 +1348,10 @@ Sie können sie auf der Registerkarte „Komponenten“ aktivieren.</translation
         <translation>HeadsetControl</translation>
     </message>
     <message>
+        <source>Fetch</source>
+        <translation>Abrufen</translation>
+    </message>
+    <message>
         <source>Equalizer Preset</source>
         <translation>Equalizer-Voreinstellung</translation>
     </message>
@@ -1374,6 +1378,10 @@ Sie können sie auf der Registerkarte „Komponenten“ aktivieren.</translation
     <message>
         <source>QontrolPanel</source>
         <translation>QontrolPanel</translation>
+    </message>
+    <message>
+        <source>Device disconnected</source>
+        <translation>Gerät nicht verbunden</translation>
     </message>
     <message>
         <source>ChatMix</source>

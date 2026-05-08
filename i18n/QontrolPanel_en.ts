@@ -1347,6 +1347,10 @@ You can enable it in the Components tab.</source>
         <translation type="unfinished">HeadsetControl</translation>
     </message>
     <message>
+        <source>Fetch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Equalizer Preset</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1372,6 +1376,10 @@ You can enable it in the Components tab.</source>
     </message>
     <message>
         <source>QontrolPanel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Device disconnected</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

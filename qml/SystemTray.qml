@@ -50,6 +50,12 @@ Platform.SystemTrayIcon {
             title: qsTr("HeadsetControl")
             visible: HeadsetControlBridge.anyDeviceFound && systemTray.hasHeadsetControlMenuEntries()
 
+            Platform.MenuItem {
+                text: qsTr("Fetch")
+                visible: systemTray.isHeadsetBatteryAvailable()
+                onTriggered: HeadsetControlBridge.refreshNow()
+            }
+
             Platform.Menu {
                 id: equalizerPresetMenu
                 title: qsTr("Equalizer Preset")
@@ -143,10 +149,11 @@ Platform.SystemTrayIcon {
         }
 
         var batteryText = "\n" + "🎧" + HeadsetControlBridge.deviceName + "\n";
-
+        batteryText += HeadsetControlBridge.batteryIcon;
         if (HeadsetControlBridge.batteryStatus !== "BATTERY_UNAVAILABLE") {
-            batteryText += HeadsetControlBridge.batteryIcon;
             batteryText += HeadsetControlBridge.batteryLevel + "%";
+        } else {
+            batteryText += qsTr("Device disconnected");
         }
 
         if (HeadsetControlBridge.hasChatMixCapability) {
@@ -156,7 +163,11 @@ Platform.SystemTrayIcon {
         return baseTooltip + batteryText;
     }
 
+    function isHeadsetBatteryAvailable() {
+        return HeadsetControlBridge.batteryStatus !== "BATTERY_UNAVAILABLE";
+    }
+
     function hasHeadsetControlMenuEntries() {
-        return (HeadsetControlBridge.hasEqualizerPresetsCapability && HeadsetControlBridge.equalizerPresetNames.length > 0) || HeadsetControlBridge.hasLightsCapability || HeadsetControlBridge.hasVoicePromptsCapability || HeadsetControlBridge.hasRotateToMuteCapability;
+        return systemTray.isHeadsetBatteryAvailable() || (HeadsetControlBridge.hasEqualizerPresetsCapability && HeadsetControlBridge.equalizerPresetNames.length > 0) || HeadsetControlBridge.hasLightsCapability || HeadsetControlBridge.hasVoicePromptsCapability || HeadsetControlBridge.hasRotateToMuteCapability;
     }
 }
