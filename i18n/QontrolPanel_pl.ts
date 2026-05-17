@@ -1275,7 +1275,7 @@ Jeśli chcesz wesprzeć moją pracę, każda wpłata będzie bardzo mile widzian
     </message>
     <message>
         <source>Unknown author</source>
-        <translation type="unfinished">Autor nieznany</translation>
+        <translation>Autor nieznany</translation>
     </message>
     <message>
         <source>Download the latest translation files from GitHub</source>
