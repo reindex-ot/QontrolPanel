@@ -2,7 +2,9 @@
 
 ### Install Qt linguist
 
-Please follow qt installation in [build guide](BUILDING.md) to install [Qt linguist](https://doc.qt.io/qt-6/linguist-translators.html).
+Download Qt Linguist [here](https://github.com/thurask/Qt-Linguist/releases) (64-bit Windows Version)<br>
+Unzip it and run `linguist.exe` from inside the unzipped folder.<br>
+More information can be found here: [Qt linguist](https://doc.qt.io/qt-6/linguist-translators.html).
 
 ### New languages
 
