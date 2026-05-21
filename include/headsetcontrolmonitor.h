@@ -53,6 +53,7 @@ public:
 public slots:
     void startMonitoring();
     void stopMonitoring();
+    void requestRefresh();
     void setLights(bool enabled);
     void setRotateToMute(bool enabled);
     void setVoicePrompts(bool enabled);
@@ -81,6 +82,7 @@ private slots:
 
 private:
     void applyTestDeviceConfiguration();
+    void updateFetchTimerInterval(bool deviceFound);
     void updateDeviceCache();
     void updateCapabilities();
     QString batteryStatusToString(battery_status status) const;

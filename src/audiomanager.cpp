@@ -9,6 +9,7 @@
 #include <QPainter>
 #include <QTimer>
 #include <QRegularExpression>
+#include <algorithm>
 #include <atlbase.h>
 #include <psapi.h>
 #include <Shlobj.h>
@@ -441,13 +442,19 @@ AudioWorker::AudioWorker()
     , m_audioLevelTimer(nullptr)
     , m_sessionManagerInvalid(false)
     , m_headsetControlMonitor(nullptr)
+    , m_headsetControlThread(nullptr)
 {
     qRegisterMetaType<AudioApplication>("AudioApplication");
     qRegisterMetaType<QList<AudioApplication>>("QList<AudioApplication>");
     qRegisterMetaType<AudioDevice>("AudioDevice");
     qRegisterMetaType<QList<AudioDevice>>("QList<AudioDevice>");
+    qRegisterMetaType<HeadsetControlDevice>("HeadsetControlDevice");
+    qRegisterMetaType<QList<HeadsetControlDevice>>("QList<HeadsetControlDevice>");
 
-    m_headsetControlMonitor = new HeadsetControlMonitor(this);
+    m_headsetControlMonitor = new HeadsetControlMonitor();
+    m_headsetControlThread = new QThread(this);
+    m_headsetControlMonitor->moveToThread(m_headsetControlThread);
+    m_headsetControlThread->start();
     connect(m_headsetControlMonitor, &HeadsetControlMonitor::headsetDataUpdated,
             this, &AudioWorker::onHeadsetDataUpdated);
 }
@@ -518,6 +525,10 @@ void AudioWorker::initialize()
 
 void AudioWorker::cleanup()
 {
+    if (m_headsetControlMonitor) {
+        QMetaObject::invokeMethod(m_headsetControlMonitor, "stopMonitoring", Qt::QueuedConnection);
+    }
+
     if (m_audioLevelTimer) {
         m_audioLevelTimer->stop();
         delete m_audioLevelTimer;
@@ -611,12 +622,38 @@ void AudioWorker::cleanup()
         m_deviceEnumerator = nullptr;
     }
 
+    if (m_headsetControlMonitor) {
+        QMetaObject::invokeMethod(m_headsetControlMonitor, "deleteLater", Qt::QueuedConnection);
+        m_headsetControlMonitor = nullptr;
+    }
+
+    if (m_headsetControlThread) {
+        m_headsetControlThread->quit();
+        bool headsetThreadStopped = m_headsetControlThread->wait(3000);
+        if (!headsetThreadStopped) {
+            LOG_WARN("AudioManager", "HeadsetControl thread did not finish gracefully, terminating...");
+            m_headsetControlThread->terminate();
+            headsetThreadStopped = m_headsetControlThread->wait();
+        }
+
+        if (!headsetThreadStopped) {
+            LOG_CRITICAL("AudioManager",
+                         "HeadsetControl thread failed to stop; refusing to continue cleanup to avoid deleting a running QThread");
+            return;
+        }
+
+        m_headsetControlThread = nullptr;
+    }
+
+    m_cachedHeadsetDevices.clear();
+
     CoUninitialize();
 }
 
 void AudioWorker::onHeadsetDataUpdated(const QList<HeadsetControlDevice>& headsetDevices)
 {
-    updateDevicesBatteryInfo(headsetDevices);
+    m_cachedHeadsetDevices = headsetDevices;
+    updateDevicesBatteryInfo(m_cachedHeadsetDevices);
     emit devicesChanged(m_devices);
 }
 
@@ -996,19 +1033,7 @@ void AudioWorker::enumerateDevices()
     m_devices = newDevices;
 
 
-    if (m_headsetControlMonitor && m_headsetControlMonitor->isMonitoring()) {
-        QList<HeadsetControlDevice> cachedDevices = m_headsetControlMonitor->getCachedDevices();
-        if (!cachedDevices.isEmpty()) {
-            updateDevicesBatteryInfo(cachedDevices);
-        }
-        // Trigger a fresh fetch
-        QMetaObject::invokeMethod(m_headsetControlMonitor,
-                                  "fetchHeadsetInfo",
-                                  Qt::QueuedConnection);
-    } else if (m_headsetControlMonitor) {
-        // If monitoring is stopped, clear any headset battery info
-        updateDevicesBatteryInfo(QList<HeadsetControlDevice>());
-    }
+    updateDevicesBatteryInfo(m_cachedHeadsetDevices);
 
     emit devicesChanged(m_devices);
 }
@@ -1754,9 +1779,22 @@ void AudioWorker::setDefaultDevice(const QString& deviceId, bool isInput, bool f
 void AudioWorker::setVolumeForDevice(EDataFlow dataFlow, int volume)
 {
     IAudioEndpointVolume* volumeControl = (dataFlow == eRender) ? m_outputVolumeControl : m_inputVolumeControl;
-    if (volumeControl) {
-        float volumeScalar = static_cast<float>(volume) / 100.0f;
-        volumeControl->SetMasterVolumeLevelScalar(volumeScalar, nullptr);
+    if (!volumeControl) {
+        LOG_WARN("AudioManager",
+                 QString("No %1 endpoint volume control available")
+                     .arg(dataFlow == eRender ? "output" : "input"));
+        return;
+    }
+
+    const int clampedVolume = std::clamp(volume, 0, 100);
+    const float volumeScalar = static_cast<float>(clampedVolume) / 100.0f;
+    const HRESULT hr = volumeControl->SetMasterVolumeLevelScalar(volumeScalar, nullptr);
+    if (!SUCCEEDED(hr)) {
+        LOG_CRITICAL("AudioManager",
+                     QString("Failed to set %1 volume to %2, HRESULT: %3")
+                         .arg(dataFlow == eRender ? "output" : "input")
+                         .arg(clampedVolume)
+                         .arg(QString::number(hr, 16)));
     }
 }
 
@@ -1887,6 +1925,12 @@ void AudioManager::cleanup()
 {
     QMutexLocker locker(&m_mutex);
 
+    {
+        QMutexLocker pendingLock(&m_pendingDefaultDeviceMutex);
+        m_pendingDefaultDeviceSwitches.fill(std::nullopt);
+        m_defaultDeviceSwitchDispatchQueued = false;
+    }
+
     if (!m_workerThread) return;
 
     if (m_worker) {
@@ -1989,18 +2033,93 @@ void AudioManager::setApplicationMuteAsync(const QString& appId, bool mute)
 
 void AudioManager::setDefaultDeviceAsync(const QString& deviceId, bool isInput, bool forCommunications)
 {
-    if (m_worker) {
-        const bool invokeOk = QMetaObject::invokeMethod(m_worker, [this, deviceId, isInput, forCommunications]() {
-            if (m_worker) {
-                m_worker->setDefaultDevice(deviceId, isInput, forCommunications);
-            }
-        }, Qt::QueuedConnection);
+    if (!m_worker) {
+        return;
+    }
+
+    bool shouldQueueDispatcher = false;
+    {
+        QMutexLocker pendingLock(&m_pendingDefaultDeviceMutex);
+        const int requestIndex = (isInput ? 2 : 0) + (forCommunications ? 1 : 0);
+        m_pendingDefaultDeviceSwitches[requestIndex] = PendingDefaultDeviceSwitch{deviceId, isInput, forCommunications};
+        if (!m_defaultDeviceSwitchDispatchQueued) {
+            m_defaultDeviceSwitchDispatchQueued = true;
+            shouldQueueDispatcher = true;
+        }
+    }
+
+    if (!shouldQueueDispatcher) {
+        return;
+    }
+
+    const bool invokeOk = QMetaObject::invokeMethod(this, &AudioManager::processPendingDefaultDeviceSwitches, Qt::QueuedConnection);
+    if (!invokeOk) {
+        LOG_CRITICAL("AudioManager",
+                     QString("Failed to queue setDefaultDevice dispatcher for %1 device")
+                         .arg(isInput ? "input" : "output"));
+
+        QMutexLocker pendingLock(&m_pendingDefaultDeviceMutex);
+        m_defaultDeviceSwitchDispatchQueued = false;
+    }
+}
+
+void AudioManager::processPendingDefaultDeviceSwitches()
+{
+    std::array<std::optional<PendingDefaultDeviceSwitch>, 4> switchesToProcess;
+    {
+        QMutexLocker pendingLock(&m_pendingDefaultDeviceMutex);
+        switchesToProcess = m_pendingDefaultDeviceSwitches;
+        m_pendingDefaultDeviceSwitches.fill(std::nullopt);
+        m_defaultDeviceSwitchDispatchQueued = false;
+    }
+
+    if (!m_worker) {
+        return;
+    }
+
+    bool hadQueuedRequest = false;
+    for (const auto& pendingSwitch : switchesToProcess) {
+        if (!pendingSwitch.has_value()) {
+            continue;
+        }
+
+        hadQueuedRequest = true;
+        const PendingDefaultDeviceSwitch request = *pendingSwitch;
+        const bool invokeOk = QMetaObject::invokeMethod(
+            m_worker,
+            [worker = m_worker, request]() {
+                if (worker) {
+                    worker->setDefaultDevice(request.deviceId, request.isInput, request.forCommunications);
+                }
+            },
+            Qt::QueuedConnection);
 
         if (!invokeOk) {
             LOG_CRITICAL("AudioManager",
-                         QString("Failed to queue setDefaultDevice call for %1 device")
-                             .arg(isInput ? "input" : "output"));
+                         QString("Failed to queue setDefaultDevice execution for %1 device communicationsRole=%2")
+                             .arg(request.isInput ? "input" : "output")
+                             .arg(request.forCommunications ? "true" : "false"));
         }
+    }
+
+    if (!hadQueuedRequest) {
+        return;
+    }
+
+    bool needsAnotherPass = false;
+    {
+        QMutexLocker pendingLock(&m_pendingDefaultDeviceMutex);
+        for (const auto& pendingSwitch : m_pendingDefaultDeviceSwitches) {
+            if (pendingSwitch.has_value() && !m_defaultDeviceSwitchDispatchQueued) {
+                m_defaultDeviceSwitchDispatchQueued = true;
+                needsAnotherPass = true;
+                break;
+            }
+        }
+    }
+
+    if (needsAnotherPass) {
+        QMetaObject::invokeMethod(this, &AudioManager::processPendingDefaultDeviceSwitches, Qt::QueuedConnection);
     }
 }
 

@@ -2,6 +2,10 @@
 #include "logmanager.h"
 #include "usersettings.h"
 
+namespace {
+constexpr int kDisconnectedFetchIntervalMs = 60000;
+}
+
 HeadsetControlMonitor::HeadsetControlMonitor(QObject *parent)
     : QObject(parent)
     , m_fetchTimer(new QTimer(this))
@@ -297,7 +301,13 @@ void HeadsetControlMonitor::setInactiveTime(int value)
 
 void HeadsetControlMonitor::fetchHeadsetInfo()
 {
-    if (!m_isMonitoring || m_isFetching) {
+    if (!m_isMonitoring) {
+        return;
+    }
+
+    if (m_isFetching) {
+        LOG_INFO("HeadsetControlManager",
+                 "Headset polling already active, skipping duplicate polling request");
         return;
     }
 
@@ -341,9 +351,12 @@ void HeadsetControlMonitor::fetchHeadsetInfo()
                 emit anyDeviceFoundChanged();
             }
             emit headsetDataUpdated(m_cachedDevices);
+            updateFetchTimerInterval(false);
             m_isFetching = false;
             return;
         }
+
+        updateFetchTimerInterval(true);
 
         LOG_INFO("HeadsetControlManager",
                                         QString("Found %1 headset device(s)").arg(m_headsets.size()));
@@ -358,6 +371,11 @@ void HeadsetControlMonitor::fetchHeadsetInfo()
     }
 
     m_isFetching = false;
+}
+
+void HeadsetControlMonitor::requestRefresh()
+{
+    fetchHeadsetInfo();
 }
 
 void HeadsetControlMonitor::updateDeviceCache()
@@ -604,10 +622,21 @@ QStringList HeadsetControlMonitor::getCapabilityList(const headsetcontrol::Heads
 void HeadsetControlMonitor::setFetchInterval(int intervalMs)
 {
     m_fetchIntervalMs = intervalMs;
-    m_fetchTimer->setInterval(m_fetchIntervalMs);
+    updateFetchTimerInterval(m_anyDeviceFound);
 
     LOG_INFO("HeadsetControlManager",
                                     QString("Fetch interval updated to %1ms").arg(m_fetchIntervalMs));
+}
+
+void HeadsetControlMonitor::updateFetchTimerInterval(bool deviceFound)
+{
+    const int effectiveInterval = deviceFound || m_testModeEnabled
+        ? m_fetchIntervalMs
+        : qMax(m_fetchIntervalMs, kDisconnectedFetchIntervalMs);
+
+    if (m_fetchTimer->interval() != effectiveInterval) {
+        m_fetchTimer->setInterval(effectiveInterval);
+    }
 }
 
 void HeadsetControlMonitor::setTestModeEnabled(bool enabled)
