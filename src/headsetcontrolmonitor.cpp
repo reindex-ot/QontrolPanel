@@ -25,6 +25,8 @@ HeadsetControlMonitor::HeadsetControlMonitor(QObject *parent)
     , m_chatMix(-1)
     , m_anyDeviceFound(false)
     , m_isFetching(false)
+    , m_activeHeadsetIndex(-1)
+    , m_activeHeadsetSettingsKey("")
     , m_testModeEnabled(false)
     , m_testProfile(3)
 {
@@ -89,6 +91,8 @@ void HeadsetControlMonitor::stopMonitoring()
     m_batteryStatus = "BATTERY_UNAVAILABLE";
     m_batteryLevel = -1;
     m_chatMix = -1;
+    m_activeHeadsetIndex = -1;
+    m_activeHeadsetSettingsKey = "";
     if (!m_equalizerPresetNames.isEmpty()) {
         m_equalizerPresetNames.clear();
         emit equalizerPresetNamesChanged();
@@ -131,11 +135,17 @@ void HeadsetControlMonitor::setLights(bool enabled)
         return;
     }
 
+    headsetcontrol::Headset* headset = activeHeadset();
+    if (!headset) {
+        LOG_WARN("HeadsetControlManager",
+                                         "Cannot set lights - headset is not reachable");
+        return;
+    }
+
     LOG_INFO("HeadsetControlManager",
                                     QString("Setting headset lights: %1").arg(enabled ? "ON" : "OFF"));
 
-    headsetcontrol::Headset& headset = m_headsets[0];
-    headsetcontrol::Result<headsetcontrol::LightsResult> result = headset.setLights(enabled);
+    headsetcontrol::Result<headsetcontrol::LightsResult> result = headset->setLights(enabled);
 
     if (!result) {
         LOG_CRITICAL("HeadsetControlManager",
@@ -160,11 +170,17 @@ void HeadsetControlMonitor::setRotateToMute(bool enabled)
         return;
     }
 
+    headsetcontrol::Headset* headset = activeHeadset();
+    if (!headset) {
+        LOG_WARN("HeadsetControlManager",
+                                         "Cannot set rotate-to-mute - headset is not reachable");
+        return;
+    }
+
     LOG_INFO("HeadsetControlManager",
                                     QString("Setting rotate-to-mute: %1").arg(enabled ? "ON" : "OFF"));
 
-    headsetcontrol::Headset& headset = m_headsets[0];
-    headsetcontrol::Result<headsetcontrol::RotateToMuteResult> result = headset.setRotateToMute(enabled);
+    headsetcontrol::Result<headsetcontrol::RotateToMuteResult> result = headset->setRotateToMute(enabled);
 
     if (!result) {
         LOG_CRITICAL("HeadsetControlManager",
@@ -189,11 +205,17 @@ void HeadsetControlMonitor::setVoicePrompts(bool enabled)
         return;
     }
 
+    headsetcontrol::Headset* headset = activeHeadset();
+    if (!headset) {
+        LOG_WARN("HeadsetControlManager",
+                                         "Cannot set voice prompts - headset is not reachable");
+        return;
+    }
+
     LOG_INFO("HeadsetControlManager",
                                     QString("Setting voice prompts: %1").arg(enabled ? "ON" : "OFF"));
 
-    headsetcontrol::Headset& headset = m_headsets[0];
-    headsetcontrol::Result<headsetcontrol::VoicePromptsResult> result = headset.setVoicePrompts(enabled);
+    headsetcontrol::Result<headsetcontrol::VoicePromptsResult> result = headset->setVoicePrompts(enabled);
 
     if (!result) {
         LOG_CRITICAL("HeadsetControlManager",
@@ -218,16 +240,22 @@ void HeadsetControlMonitor::setEqualizerPreset(int preset)
         return;
     }
 
+    headsetcontrol::Headset* headset = activeHeadset();
+    if (!headset) {
+        LOG_WARN("HeadsetControlManager",
+                                         "Cannot set equalizer preset - headset is not reachable");
+        return;
+    }
+
     const int maxPresetIndex = m_equalizerPresetNames.isEmpty()
-        ? static_cast<int>(m_headsets[0].getEqualizerPresetsCount()) - 1
+        ? static_cast<int>(headset->getEqualizerPresetsCount()) - 1
         : m_equalizerPresetNames.size() - 1;
     preset = qBound(0, preset, qMax(0, maxPresetIndex));
 
     LOG_INFO("HeadsetControlManager",
                                     QString("Setting headset equalizer preset to %1").arg(preset));
 
-    headsetcontrol::Headset& headset = m_headsets[0];
-    headsetcontrol::Result<headsetcontrol::EqualizerPresetResult> result = headset.setEqualizerPreset(static_cast<uint8_t>(preset));
+    headsetcontrol::Result<headsetcontrol::EqualizerPresetResult> result = headset->setEqualizerPreset(static_cast<uint8_t>(preset));
 
     if (!result) {
         LOG_CRITICAL("HeadsetControlManager",
@@ -252,13 +280,19 @@ void HeadsetControlMonitor::setSidetone(int value)
         return;
     }
 
+    headsetcontrol::Headset* headset = activeHeadset();
+    if (!headset) {
+        LOG_WARN("HeadsetControlManager",
+                                         "Cannot set sidetone - headset is not reachable");
+        return;
+    }
+
     value = qBound(0, value, 128);
 
     LOG_INFO("HeadsetControlManager",
                                     QString("Setting headset sidetone to %1").arg(value));
 
-    headsetcontrol::Headset& headset = m_headsets[0];
-    headsetcontrol::Result<headsetcontrol::SidetoneResult> result = headset.setSidetone(static_cast<uint8_t>(value));
+    headsetcontrol::Result<headsetcontrol::SidetoneResult> result = headset->setSidetone(static_cast<uint8_t>(value));
 
     if (!result) {
         LOG_CRITICAL("HeadsetControlManager",
@@ -283,13 +317,19 @@ void HeadsetControlMonitor::setInactiveTime(int value)
         return;
     }
 
+    headsetcontrol::Headset* headset = activeHeadset();
+    if (!headset) {
+        LOG_WARN("HeadsetControlManager",
+                                         "Cannot set inactive time - headset is not reachable");
+        return;
+    }
+
     value = qBound(0, value, 128);
 
     LOG_INFO("HeadsetControlManager",
                                     QString("Setting headset inactive time to %1 minutes").arg(value));
 
-    headsetcontrol::Headset& headset = m_headsets[0];
-    headsetcontrol::Result<headsetcontrol::InactiveTimeResult> result = headset.setInactiveTime(static_cast<uint8_t>(value));
+    headsetcontrol::Result<headsetcontrol::InactiveTimeResult> result = headset->setInactiveTime(static_cast<uint8_t>(value));
 
     if (!result) {
         LOG_CRITICAL("HeadsetControlManager",
@@ -350,6 +390,8 @@ void HeadsetControlMonitor::fetchHeadsetInfoInternal(bool bypassRecentFetch)
             m_batteryStatus = "BATTERY_UNAVAILABLE";
             m_batteryLevel = -1;
             m_chatMix = -1;
+            m_activeHeadsetIndex = -1;
+            m_activeHeadsetSettingsKey = "";
             if (!m_equalizerPresetNames.isEmpty()) {
                 m_equalizerPresetNames.clear();
                 emit equalizerPresetNamesChanged();
@@ -373,12 +415,11 @@ void HeadsetControlMonitor::fetchHeadsetInfoInternal(bool bypassRecentFetch)
             return;
         }
 
-        updateFetchTimerInterval(true);
-
         LOG_INFO("HeadsetControlManager",
                                         QString("Found %1 headset device(s)").arg(m_headsets.size()));
 
         updateDeviceCache();
+        updateFetchTimerInterval(m_anyDeviceFound);
 
     } catch (const std::exception& e) {
         LOG_CRITICAL("HeadsetControlManager",
@@ -417,9 +458,12 @@ void HeadsetControlMonitor::scheduleNextFetch()
 void HeadsetControlMonitor::updateDeviceCache()
 {
     QList<HeadsetControlDevice> newDevices;
+    int activeHeadsetIndex = -1;
 
-    for (headsetcontrol::Headset& headset : m_headsets) {
+    for (int headsetIndex = 0; headsetIndex < static_cast<int>(m_headsets.size()); ++headsetIndex) {
+        headsetcontrol::Headset& headset = m_headsets[headsetIndex];
         HeadsetControlDevice device;
+        bool deviceReachable = true;
 
         device.deviceName = QString::fromStdString(std::string(headset.name()));
         device.vendorId = QString("0x%1").arg(headset.vendorId(), 4, 16, QChar('0')).toUpper();
@@ -441,7 +485,8 @@ void HeadsetControlMonitor::updateDeviceCache()
                                                     .arg(device.deviceName, device.batteryStatus).arg(device.batteryLevel));
             } else {
                 device.batteryLevel = -1;
-                device.batteryStatus = "BATTERY_UNAVAILABLE";
+                device.batteryStatus = batteryStatusFromError(batteryResult.error());
+                deviceReachable = false;
                 LOG_WARN("HeadsetControlManager",
                                                  QString("Failed to read battery: %1")
                                                      .arg(QString::fromStdString(batteryResult.error().fullMessage())));
@@ -451,7 +496,7 @@ void HeadsetControlMonitor::updateDeviceCache()
             device.batteryLevel = -1;
         }
 
-        if (headset.supports(CAP_CHATMIX_STATUS)) {
+        if (deviceReachable && headset.supports(CAP_CHATMIX_STATUS)) {
             headsetcontrol::Result<headsetcontrol::ChatmixResult> chatMixResult = headset.getChatmix();
             if (chatMixResult) {
                 device.chatMix = chatMixResult->level;
@@ -473,15 +518,25 @@ void HeadsetControlMonitor::updateDeviceCache()
                                         QString("Found headset device: %1 with %2 capabilities")
                                             .arg(device.deviceName).arg(device.capabilities.size()));
 
+        if (deviceReachable && activeHeadsetIndex < 0) {
+            activeHeadsetIndex = headsetIndex;
+        } else if (!deviceReachable) {
+            LOG_INFO("HeadsetControlManager",
+                                            QString("Headset device %1 is not reachable; saved settings will not be applied until it responds")
+                                                .arg(device.deviceName));
+        }
+
         newDevices.append(device);
     }
 
     m_cachedDevices = newDevices;
+    m_activeHeadsetIndex = activeHeadsetIndex;
     updateCapabilities();
 
     // Update bridge battery info from the first device
-    if (!m_cachedDevices.isEmpty()) {
-        const HeadsetControlDevice& primaryDevice = m_cachedDevices.first();
+    const int primaryDeviceIndex = m_activeHeadsetIndex >= 0 ? m_activeHeadsetIndex : 0;
+    if (primaryDeviceIndex >= 0 && primaryDeviceIndex < m_cachedDevices.size()) {
+        const HeadsetControlDevice& primaryDevice = m_cachedDevices.at(primaryDeviceIndex);
         if (primaryDevice.batteryStatus != m_batteryStatus) {
             m_batteryStatus = primaryDevice.batteryStatus;
             emit batteryStatusChanged();
@@ -499,6 +554,24 @@ void HeadsetControlMonitor::updateDeviceCache()
     emit headsetDataUpdated(m_cachedDevices);
 }
 
+headsetcontrol::Headset* HeadsetControlMonitor::activeHeadset()
+{
+    if (m_activeHeadsetIndex < 0 || m_activeHeadsetIndex >= static_cast<int>(m_headsets.size())) {
+        return nullptr;
+    }
+
+    return &m_headsets[m_activeHeadsetIndex];
+}
+
+QString HeadsetControlMonitor::activeHeadsetSettingsKey(const headsetcontrol::Headset& headset) const
+{
+    return QString("%1:%2:%3:%4")
+        .arg(m_activeHeadsetIndex)
+        .arg(headset.vendorId(), 4, 16, QChar('0'))
+        .arg(headset.productId(), 4, 16, QChar('0'))
+        .arg(QString::fromStdString(std::string(headset.name())));
+}
+
 void HeadsetControlMonitor::updateCapabilities()
 {
     bool newSidetoneCapability = false;
@@ -509,13 +582,14 @@ void HeadsetControlMonitor::updateCapabilities()
     bool newEqualizerPresetsCapability = false;
     bool newInactivetimeCapability = false;
     QString newDeviceName = "";
+    QString newActiveHeadsetSettingsKey = "";
     QStringList newEqualizerPresetNames;
-    bool newAnyDeviceFound = !m_cachedDevices.isEmpty();
-    bool wasDeviceFound = m_anyDeviceFound;
+    bool newAnyDeviceFound = m_activeHeadsetIndex >= 0;
 
-    if (!m_headsets.empty()) {
-        const headsetcontrol::Headset& headset = m_headsets[0];
+    if (headsetcontrol::Headset* active = activeHeadset()) {
+        const headsetcontrol::Headset& headset = *active;
         newDeviceName = QString::fromStdString(std::string(headset.name()));
+        newActiveHeadsetSettingsKey = activeHeadsetSettingsKey(headset);
 
         newSidetoneCapability = headset.supports(CAP_SIDETONE);
         newLightsCapability = headset.supports(CAP_LIGHTS);
@@ -575,48 +649,55 @@ void HeadsetControlMonitor::updateCapabilities()
     if (newAnyDeviceFound != m_anyDeviceFound) {
         m_anyDeviceFound = newAnyDeviceFound;
         emit anyDeviceFoundChanged();
+    }
 
-        if (!wasDeviceFound && newAnyDeviceFound) {
+    if (!newAnyDeviceFound) {
+        m_activeHeadsetSettingsKey = "";
+        return;
+    }
+
+    if (newActiveHeadsetSettingsKey != m_activeHeadsetSettingsKey) {
+        m_activeHeadsetSettingsKey = newActiveHeadsetSettingsKey;
+
+        LOG_INFO("HeadsetControlManager",
+                                        "Active headset changed, applying saved settings");
+
+        if (newLightsCapability) {
+            bool lightsEnabled = UserSettings::instance()->headsetcontrolLights();
             LOG_INFO("HeadsetControlManager",
-                                            "New headset device detected, applying saved settings");
-
-            if (newLightsCapability) {
-                bool lightsEnabled = UserSettings::instance()->headsetcontrolLights();
+                                            QString("Applying saved lights setting: %1").arg(lightsEnabled ? "ON" : "OFF"));
+            setLights(lightsEnabled);
+        }
+        if (newRotateToMuteCapability) {
+            bool rotateToMuteEnabled = UserSettings::instance()->headsetcontrolRotateToMute();
+            LOG_INFO("HeadsetControlManager",
+                                            QString("Applying saved rotate-to-mute setting: %1").arg(rotateToMuteEnabled ? "ON" : "OFF"));
+            setRotateToMute(rotateToMuteEnabled);
+        }
+        if (newVoicePromptsCapability) {
+            bool voicePromptsEnabled = UserSettings::instance()->headsetcontrolVoicePrompts();
+            LOG_INFO("HeadsetControlManager",
+                                            QString("Applying saved voice prompts setting: %1").arg(voicePromptsEnabled ? "ON" : "OFF"));
+            setVoicePrompts(voicePromptsEnabled);
+        }
+        if (newEqualizerPresetsCapability && !m_equalizerPresetNames.isEmpty()) {
+            int equalizerPresetValue = UserSettings::instance()->headsetcontrolEqualizerPreset();
+            LOG_INFO("HeadsetControlManager",
+                                            QString("Applying saved equalizer preset: %1").arg(equalizerPresetValue));
+            setEqualizerPreset(equalizerPresetValue);
+        }
+        if (newSidetoneCapability) {
+            int sidetoneValue = UserSettings::instance()->headsetcontrolSidetone();
+            LOG_INFO("HeadsetControlManager",
+                                            QString("Applying saved sidetone setting: %1").arg(sidetoneValue));
+            setSidetone(sidetoneValue);
+        }
+        if (newInactivetimeCapability) {
+            int inactiveTimeValue = UserSettings::instance()->headsetcontrolInactiveTime();
+            if (inactiveTimeValue >= 0) {
                 LOG_INFO("HeadsetControlManager",
-                                                QString("Applying saved lights setting: %1").arg(lightsEnabled ? "ON" : "OFF"));
-                setLights(lightsEnabled);
-            }
-            if (newRotateToMuteCapability) {
-                bool rotateToMuteEnabled = UserSettings::instance()->headsetcontrolRotateToMute();
-                LOG_INFO("HeadsetControlManager",
-                                                QString("Applying saved rotate-to-mute setting: %1").arg(rotateToMuteEnabled ? "ON" : "OFF"));
-                setRotateToMute(rotateToMuteEnabled);
-            }
-            if (newVoicePromptsCapability) {
-                bool voicePromptsEnabled = UserSettings::instance()->headsetcontrolVoicePrompts();
-                LOG_INFO("HeadsetControlManager",
-                                                QString("Applying saved voice prompts setting: %1").arg(voicePromptsEnabled ? "ON" : "OFF"));
-                setVoicePrompts(voicePromptsEnabled);
-            }
-            if (newEqualizerPresetsCapability && !m_equalizerPresetNames.isEmpty()) {
-                int equalizerPresetValue = UserSettings::instance()->headsetcontrolEqualizerPreset();
-                LOG_INFO("HeadsetControlManager",
-                                                QString("Applying saved equalizer preset: %1").arg(equalizerPresetValue));
-                setEqualizerPreset(equalizerPresetValue);
-            }
-            if (newSidetoneCapability) {
-                int sidetoneValue = UserSettings::instance()->headsetcontrolSidetone();
-                LOG_INFO("HeadsetControlManager",
-                                                QString("Applying saved sidetone setting: %1").arg(sidetoneValue));
-                setSidetone(sidetoneValue);
-            }
-            if (newInactivetimeCapability) {
-                int inactiveTimeValue = UserSettings::instance()->headsetcontrolInactiveTime();
-                if (inactiveTimeValue >= 0) {
-                    LOG_INFO("HeadsetControlManager",
-                                                    QString("Applying saved inactive time setting: %1").arg(inactiveTimeValue));
-                    setInactiveTime(inactiveTimeValue);
-                }
+                                                QString("Applying saved inactive time setting: %1").arg(inactiveTimeValue));
+                setInactiveTime(inactiveTimeValue);
             }
         }
     }
@@ -635,6 +716,21 @@ QString HeadsetControlMonitor::batteryStatusToString(battery_status status) cons
         return "BATTERY_HIDERROR";
     case BATTERY_TIMEOUT:
         return "BATTERY_TIMEOUT";
+    default:
+        return "BATTERY_UNAVAILABLE";
+    }
+}
+
+QString HeadsetControlMonitor::batteryStatusFromError(const headsetcontrol::DeviceError& error) const
+{
+    switch (error.code) {
+    case headsetcontrol::DeviceError::Code::Timeout:
+        return "BATTERY_TIMEOUT";
+    case headsetcontrol::DeviceError::Code::DeviceOffline:
+        return "BATTERY_UNAVAILABLE";
+    case headsetcontrol::DeviceError::Code::HIDError:
+    case headsetcontrol::DeviceError::Code::USBError:
+        return "BATTERY_HIDERROR";
     default:
         return "BATTERY_UNAVAILABLE";
     }

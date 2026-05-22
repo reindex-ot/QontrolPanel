@@ -89,7 +89,10 @@ private:
     void updateFetchTimerInterval(bool deviceFound);
     void updateDeviceCache();
     void updateCapabilities();
+    headsetcontrol::Headset* activeHeadset();
+    QString activeHeadsetSettingsKey(const headsetcontrol::Headset& headset) const;
     QString batteryStatusToString(battery_status status) const;
+    QString batteryStatusFromError(const headsetcontrol::DeviceError& error) const;
     QStringList getCapabilityList(const headsetcontrol::Headset& headset) const;
 
     QTimer* m_fetchTimer;
@@ -113,6 +116,8 @@ private:
     QStringList m_equalizerPresetNames;
     bool m_anyDeviceFound;
     bool m_isFetching;
+    int m_activeHeadsetIndex;
+    QString m_activeHeadsetSettingsKey;
     QElapsedTimer m_lastFetchCompleted;
     bool m_testModeEnabled;
     int m_testProfile;
